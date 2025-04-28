@@ -102,61 +102,51 @@ export default function SalesReportPage() {
     }
   });
 
-  // Mock dos dados de vendas diárias para desenvolvimento (remover quando API estiver implementada)
-  const mockSalesSummary: DailySalesSummary[] = [];
-  if (!salesSummary || salesSummary.length === 0) {
-    // Apenas para o propósito de desenvolvimento, criaremos dados de exemplo
-    const mockStartDate = subDays(new Date(), timeFrame === 'today' ? 0 : 
-                                            timeFrame === '7days' ? 7 : 
-                                            timeFrame === '30days' ? 30 : 90);
-    
-    for (let i = 0; i <= (timeFrame === 'today' ? 0 : 
-                        timeFrame === '7days' ? 7 : 
-                        timeFrame === '30days' ? 30 : 90); i++) {
-      const currentDate = addDays(mockStartDate, i);
-      if (i === 0 && timeFrame === 'today' && !isToday(currentDate)) continue;
-      
-      mockSalesSummary.push({
-        date: format(currentDate, 'yyyy-MM-dd'),
-        total: Math.floor(Math.random() * 5000) + 500,
-        count: Math.floor(Math.random() * 10) + 1
-      });
+  // Buscar todas as vendas para o período
+  const { data: sales, isLoading: isLoadingSaleItems } = useQuery({
+    queryKey: ['/api/sales', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
+    queryFn: async () => {
+      const response = await fetch(`/api/sales?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+      if (!response.ok) {
+        throw new Error('Falha ao buscar vendas');
+      }
+      return response.json();
     }
-  }
-
-  // Usar dados reais ou mock se não houver dados
-  const displaySalesSummary = salesSummary && salesSummary.length > 0 
-    ? salesSummary 
-    : mockSalesSummary;
+  });
   
-  // Mock dos produtos mais vendidos (remover quando API estiver implementada)
-  const mockTopProducts: TopProductSummary[] = [];
-  if (products && products.length > 0) {
-    const usedProducts = new Set<number>();
-    const availableProducts = [...products];
-    
-    for (let i = 0; i < Math.min(5, availableProducts.length); i++) {
-      const randomIndex = Math.floor(Math.random() * availableProducts.length);
-      const product = availableProducts[randomIndex];
-      
-      if (!usedProducts.has(product.id)) {
-        usedProducts.add(product.id);
-        mockTopProducts.push({
-          id: product.id,
-          name: product.name,
-          quantity: Math.floor(Math.random() * 50) + 5,
-          total: parseFloat((Math.random() * 1000 + 100).toFixed(2))
-        });
+  // Buscar itens de vendas para calcular produtos mais vendidos
+  const { data: saleItems, isLoading: isLoadingSaleDetails } = useQuery({
+    queryKey: ['/api/sales/items', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
+    enabled: sales && sales.length > 0 && products && products.length > 0,
+    queryFn: async () => {
+      try {
+        // Em uma implementação real, seria melhor ter um endpoint específico para buscar todos os itens
+        // Como solução alternativa, vamos buscar os detalhes de cada venda
+        const allItems = [];
         
-        // Remover o produto para evitar duplicatas
-        availableProducts.splice(randomIndex, 1);
+        for (const sale of sales) {
+          const response = await fetch(`/api/sales/${sale.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.items && Array.isArray(data.items)) {
+              allItems.push(...data.items);
+            }
+          }
+        }
+        
+        return allItems;
+      } catch (error) {
+        console.error('Erro ao buscar itens de venda:', error);
+        return [];
       }
     }
-  }
+  });
   
-  // Função para calcular produtos mais vendidos de uma lista de items de venda
-  const calculateTopProducts = (saleItems: SaleItemSimple[] = [], productsList: Product[] = [], limit = 5): TopProductSummary[] => {
-    if (!saleItems.length || !productsList.length) return mockTopProducts;
+  // Calcular produtos mais vendidos
+  const calculateTopProductsFromSaleItems = () => {
+    if (!saleItems || !products || saleItems.length === 0 || products.length === 0) {
+      return [];
+    }
     
     // Agrupar por produto e somar quantidades e valores
     const productMap: Record<number, { quantity: number, total: number }> = {};
@@ -175,7 +165,7 @@ export default function SalesReportPage() {
     // Converter para array e ordenar por quantidade
     const topProducts = Object.entries(productMap)
       .map(([productId, data]) => {
-        const product = productsList.find(p => p.id === parseInt(productId));
+        const product = products.find(p => p.id === parseInt(productId));
         return {
           id: parseInt(productId),
           name: product?.name || 'Produto não encontrado',
@@ -184,33 +174,36 @@ export default function SalesReportPage() {
         };
       })
       .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, limit);
+      .slice(0, 5); // Top 5
     
-    return topProducts.length > 0 ? topProducts : mockTopProducts;
+    return topProducts;
   };
-
-  // Por enquanto, usamos os dados mock diretamente, mas isso seria substituído por dados reais
-  const topProducts = calculateTopProducts([], products || []);
   
-  // Configurar dados para gráfico de barras de vendas
-  const salesChartData = {
-    labels: displaySalesSummary.map(item => {
-      const date = typeof item.date === 'string' ? parseISO(item.date) : item.date;
+  const topProducts = calculateTopProductsFromSaleItems();
+  
+  // Verificar se há dados disponíveis
+  const hasData = salesSummary && salesSummary.length > 0;
+  const hasProducts = topProducts && topProducts.length > 0;
+  
+  // Preparar dados para gráficos apenas se houver dados
+  const salesChartData = hasData ? {
+    labels: salesSummary.map(item => {
+      const date = parseISO(item.date);
       return isToday(date) ? 'Hoje' : format(date, 'dd/MM');
     }),
     datasets: [
       {
         label: 'Vendas (R$)',
-        data: displaySalesSummary.map(item => item.total),
+        data: salesSummary.map(item => item.total),
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         borderColor: 'rgb(53, 162, 235)',
         borderWidth: 1,
       }
     ],
-  };
+  } : { labels: [], datasets: [] };
   
-  // Configurar dados para gráfico de pizza de produtos mais vendidos
-  const topProductsChartData = {
+  // Preparar dados para gráfico de pizza de produtos mais vendidos
+  const topProductsChartData = hasProducts ? {
     labels: topProducts.map(item => item.name),
     datasets: [
       {
@@ -233,7 +226,7 @@ export default function SalesReportPage() {
         borderWidth: 1,
       },
     ],
-  };
+  } : { labels: [], datasets: [] };
   
   // Opções para gráficos
   const chartOptions = {
@@ -251,12 +244,21 @@ export default function SalesReportPage() {
   };
   
   // Calcular métricas resumidas
-  const totalSales = displaySalesSummary.reduce((sum, item) => sum + item.total, 0);
-  const totalTransactions = displaySalesSummary.reduce((sum, item) => sum + item.count, 0);
+  const totalSales = hasData
+    ? salesSummary.reduce((sum, item) => sum + item.total, 0)
+    : 0;
+    
+  const totalTransactions = hasData
+    ? salesSummary.reduce((sum, item) => sum + item.count, 0)
+    : 0;
+    
   const averageTicket = totalTransactions > 0 
     ? totalSales / totalTransactions 
     : 0;
-  const totalItems = topProducts.reduce((sum, item) => sum + item.quantity, 0);
+    
+  const totalItems = hasProducts
+    ? topProducts.reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
   
   // Manipulador para alternar entre intervalos de tempo (hoje, 7 dias, 30 dias, etc.)
   const handleTimeFrameChange = (value: string) => {
@@ -305,37 +307,40 @@ export default function SalesReportPage() {
         pdf.addImage(imgData, 'PNG', 10, 35, imgWidth, imgHeight);
         
         // Adicionar tabela de produtos mais vendidos
-        pdf.addPage();
-        pdf.setFontSize(16);
-        pdf.text('Produtos Mais Vendidos', 105, 15, { align: 'center' });
-        
-        // Preparar dados para a tabela
-        const tableData = topProducts.map(product => [
-          product.name,
-          product.quantity.toString(),
-          formatCurrency(product.total),
-        ]);
-        
-        // Adicionar tabela
-        autoTable(pdf, {
-          head: [['Produto', 'Quantidade', 'Total (R$)']],
-          body: tableData,
-          startY: 25,
-          theme: 'grid',
-          styles: {
-            fontSize: 10,
-            cellPadding: 3,
-          },
-          headStyles: {
-            fillColor: [41, 128, 185],
-            textColor: 255,
-            fontStyle: 'bold',
-          },
-        });
+        if (hasProducts) {
+          pdf.addPage();
+          pdf.setFontSize(16);
+          pdf.text('Produtos Mais Vendidos', 105, 15, { align: 'center' });
+          
+          // Preparar dados para a tabela
+          const tableData = topProducts.map(product => [
+            product.name,
+            product.quantity.toString(),
+            formatCurrency(product.total),
+          ]);
+          
+          // Adicionar tabela
+          autoTable(pdf, {
+            head: [['Produto', 'Quantidade', 'Total (R$)']],
+            body: tableData,
+            startY: 25,
+            theme: 'grid',
+            styles: {
+              fontSize: 10,
+              cellPadding: 3,
+            },
+            headStyles: {
+              fillColor: [41, 128, 185],
+              textColor: 255,
+              fontStyle: 'bold',
+            },
+          });
+        }
         
         // Adicionar resumo de métricas
+        pdf.addPage();
         pdf.setFontSize(16);
-        pdf.text('Resumo de Métricas', 105, 120, { align: 'center' });
+        pdf.text('Resumo de Métricas', 105, 15, { align: 'center' });
         
         // Criar tabela de resumo
         autoTable(pdf, {
@@ -346,7 +351,7 @@ export default function SalesReportPage() {
             ['Transações', totalTransactions.toString()],
             ['Ticket Médio', formatCurrency(averageTicket)],
           ],
-          startY: 130,
+          startY: 25,
           theme: 'grid',
           styles: {
             fontSize: 10,
@@ -371,6 +376,9 @@ export default function SalesReportPage() {
   const printReport = () => {
     window.print();
   };
+  
+  // Verificar se temos dados carregando
+  const isLoading = isLoadingSales || isLoadingSaleItems || isLoadingSaleDetails;
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6" ref={reportRef}>
@@ -482,15 +490,16 @@ export default function SalesReportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[350px]">
-              {isLoadingSales ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <p>Carregando dados...</p>
                 </div>
-              ) : displaySalesSummary && displaySalesSummary.length > 0 ? (
+              ) : hasData ? (
                 <Bar data={salesChartData} options={chartOptions} />
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p>Nenhuma venda registrada no período selecionado.</p>
+                <div className="flex flex-col items-center justify-center h-full">
+                  <p className="text-muted-foreground">Nenhuma venda registrada no período selecionado.</p>
+                  <p className="text-sm mt-2">Registre vendas na página de Vendas para visualizar dados aqui.</p>
                 </div>
               )}
             </CardContent>
@@ -512,17 +521,22 @@ export default function SalesReportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[350px]">
-              {topProducts && topProducts.length > 0 ? (
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <p>Carregando dados...</p>
+                </div>
+              ) : hasProducts ? (
                 <Pie data={topProductsChartData} options={chartOptions} />
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p>Nenhuma venda registrada no período selecionado.</p>
+                <div className="flex flex-col items-center justify-center h-full">
+                  <p className="text-muted-foreground">Nenhum produto vendido no período selecionado.</p>
+                  <p className="text-sm mt-2">Registre vendas na página de Vendas para visualizar dados aqui.</p>
                 </div>
               )}
             </CardContent>
           </Card>
           
-          {topProducts && topProducts.length > 0 && (
+          {hasProducts && (
             <Card>
               <CardHeader>
                 <CardTitle>Detalhes dos Produtos Mais Vendidos</CardTitle>

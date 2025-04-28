@@ -167,32 +167,59 @@ export default function SalesPage() {
     }, 0);
   };
 
-  // Mutação para processar a venda e atualizar o estoque
+  // Mutação para processar a venda, criar registro no sistema e atualizar o estoque
   const processSale = useMutation({
     mutationFn: async (saleData: any) => {
-      // Em um sistema real, aqui enviaria para o backend
-      // Por enquanto, vamos atualizar apenas o estoque de cada produto
-      
-      const updatePromises = saleData.items.map((item: any) => {
-        const newStock = item.product.stock - item.quantity;
-        return apiRequest('PUT', `/api/products/${item.product.id}`, {
-          ...item.product,
-          stock: newStock
+      try {
+        // 1. Primeiro criar o registro de venda
+        const saleResponse = await apiRequest('POST', '/api/sales', {
+          clientId: null, // Venda sem cliente associado 
+          date: new Date().toISOString(),
+          total: saleData.total.toString(),
+          items: saleData.items.map((item: CartItem) => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            unitPrice: item.product.price,
+            total: (Number(item.product.price) * item.quantity).toString()
+          }))
         });
-      });
-      
-      return Promise.all(updatePromises);
+        
+        if (!saleResponse) {
+          throw new Error('Erro ao criar registro de venda');
+        }
+        
+        console.log('Venda registrada:', saleResponse);
+        
+        // 2. Atualizar o estoque de cada produto
+        const updatePromises = saleData.items.map((item: CartItem) => {
+          const newStock = item.product.stock - item.quantity;
+          return apiRequest('PUT', `/api/products/${item.product.id}`, {
+            ...item.product,
+            stock: newStock
+          });
+        });
+        
+        const updatedProducts = await Promise.all(updatePromises);
+        console.log('Produtos atualizados:', updatedProducts);
+        
+        return { sale: saleResponse, products: updatedProducts };
+      } catch (error) {
+        console.error('Erro ao processar venda:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       // Limpar carrinho
       setCart([]);
       
-      // Invalidar cache para forçar recarregamento dos produtos
+      // Invalidar cache para forçar recarregamento dos produtos e vendas
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sales'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sales/summary/daily'] });
       
       toast({
         title: "Venda finalizada com sucesso!",
-        description: "Os produtos foram baixados do estoque."
+        description: "Venda registrada no sistema e estoque atualizado."
       });
     },
     onError: (error) => {
