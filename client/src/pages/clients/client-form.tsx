@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Client, clientValidationSchema } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -53,7 +53,7 @@ export default function ClientForm({ client, onClose, onSaved }: ClientFormProps
   });
 
   const saveClient = useMutation({
-    mutationFn: async (data: typeof form.getValues) => {
+    mutationFn: async (data: ReturnType<typeof form.getValues>) => {
       if (isEditing && client) {
         return await apiRequest('PUT', `/api/clients/${client.id}`, data);
       } else {
@@ -61,6 +61,8 @@ export default function ClientForm({ client, onClose, onSaved }: ClientFormProps
       }
     },
     onSuccess: () => {
+      // Invalidar cache de clientes para forçar recarregamento
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       onSaved();
     },
     onError: (error) => {
@@ -68,7 +70,7 @@ export default function ClientForm({ client, onClose, onSaved }: ClientFormProps
     },
   });
 
-  const onSubmit = (data: typeof form.getValues) => {
+  const onSubmit = (data: any) => {
     saveClient.mutate(data);
   };
 
