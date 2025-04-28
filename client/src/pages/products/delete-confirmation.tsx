@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -36,6 +36,12 @@ export default function DeleteConfirmation({
       return await apiRequest("DELETE", endpoint);
     },
     onSuccess: () => {
+      // Invalidar todos os caches relacionados a produtos para forçar recarregamento
+      if (itemType === "product") {
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      }
       onDeleted();
     },
     onError: (error) => {

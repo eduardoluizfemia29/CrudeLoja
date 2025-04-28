@@ -71,6 +71,8 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
       }
     },
     onSuccess: () => {
+      // Invalidar todos os caches relacionados a produtos para forçar recarregamento
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       onSaved();
     },
     onError: (error) => {

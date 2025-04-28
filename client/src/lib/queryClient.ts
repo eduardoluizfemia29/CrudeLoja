@@ -51,7 +51,6 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: true, // Recarregar quando a janela receber foco
       staleTime: 0, // Considerar todos os dados como obsoletos
-      cacheTime: 30000, // Manter no cache por 30 segundos
       retry: false,
     },
     mutations: {
