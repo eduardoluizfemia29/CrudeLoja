@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Product, productValidationSchema } from "@shared/schema";
+import { Product, productValidationSchema, DEFAULT_MIN_STOCK } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
       category: product.category,
       price: Number(product.price), // Convert from Decimal to number
       stock: product.stock,
+      minStock: product.minStock || DEFAULT_MIN_STOCK,
       sku: product.sku || "",
     } : {
       name: "",
@@ -56,6 +57,7 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
       category: "",
       price: 0,
       stock: 0,
+      minStock: DEFAULT_MIN_STOCK,
       sku: "",
     },
   });
@@ -83,6 +85,7 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
       ...data,
       price: data.price.toString(),
       stock: Number(data.stock),
+      minStock: Number(data.minStock),
     };
     
     saveProduct.mutate(formattedData);
@@ -205,6 +208,28 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="minStock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Mínimo</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder={DEFAULT_MIN_STOCK.toString()}
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="sku"

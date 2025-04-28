@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Client, Product, CATEGORY_LOW_STOCK_THRESHOLDS } from "@shared/schema";
+import { Client, Product, DEFAULT_MIN_STOCK } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils/format";
 import { Loader2 } from "lucide-react";
 
@@ -17,11 +17,11 @@ export default function Dashboard() {
   const totalClients = clients?.length || 0;
   const totalProducts = products?.length || 0;
   
-  // Contagem de produtos com estoque baixo usando limites específicos por categoria
+  // Contagem de produtos com estoque baixo usando limites específicos para cada produto
   const lowStockProducts = products?.filter(product => {
     if (product.stock === 0) return false; // Sem estoque é uma categoria diferente
-    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
-    return product.stock <= lowStockThreshold;
+    const minStock = product.minStock || DEFAULT_MIN_STOCK;
+    return product.stock <= minStock;
   }).length || 0;
   
   const outOfStockProducts = products?.filter(p => p.stock === 0).length || 0;
@@ -121,19 +121,19 @@ export default function Dashboard() {
           <CardContent>
             {products && products.some(product => {
               if (product.stock === 0) return true;
-              const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
-              return product.stock <= lowStockThreshold;
+              const minStock = product.minStock || DEFAULT_MIN_STOCK;
+              return product.stock <= minStock;
             }) ? (
               <ul className="space-y-2">
                 {products
                   .filter(product => {
                     if (product.stock === 0) return true;
-                    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
-                    return product.stock <= lowStockThreshold;
+                    const minStock = product.minStock || DEFAULT_MIN_STOCK;
+                    return product.stock <= minStock;
                   })
                   .slice(0, 5)
                   .map((product) => {
-                    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
+                    const minStock = product.minStock || DEFAULT_MIN_STOCK;
                     return (
                       <li key={product.id} className="p-2 hover:bg-gray-50 rounded flex justify-between items-center">
                         <div>
@@ -141,7 +141,7 @@ export default function Dashboard() {
                           <div className="text-sm text-gray-500">{product.category}</div>
                         </div>
                         <div className={`text-sm font-medium ${product.stock === 0 ? 'text-red-600' : 'text-yellow-600'}`}>
-                          {product.stock === 0 ? 'Sem estoque' : `Estoque: ${product.stock}/${lowStockThreshold}`}
+                          {product.stock === 0 ? 'Sem estoque' : `Estoque: ${product.stock}/${minStock}`}
                         </div>
                       </li>
                     );

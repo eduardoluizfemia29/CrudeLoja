@@ -2,19 +2,8 @@ import { pgTable, text, serial, integer, numeric, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Definição de estoque baixo por categoria
-export const CATEGORY_LOW_STOCK_THRESHOLDS: Record<string, number> = {
-  "eletronicos": 3,
-  "moveis": 2,
-  "vestuario": 5,
-  "calcados": 3,
-  "decoracao": 3,
-  "utilidades": 5,
-  "esportes": 3,
-  "brinquedos": 4,
-  "alimentos": 10,
-  "outro": 5
-};
+// Valores padrão para estoque baixo (usado quando minStock não está definido)
+export const DEFAULT_MIN_STOCK = 5;
 
 // Clients schema
 export const clients = pgTable("clients", {
@@ -40,6 +29,7 @@ export const products = pgTable("products", {
   category: text("category").notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   stock: integer("stock").notNull(),
+  minStock: integer("min_stock").default(DEFAULT_MIN_STOCK),
   sku: text("sku"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -64,4 +54,5 @@ export const productValidationSchema = insertProductSchema.extend({
   category: z.string().min(1, "Categoria é obrigatória"),
   price: z.coerce.number().positive("Preço deve ser maior que zero"),
   stock: z.coerce.number().int().min(0, "Estoque não pode ser negativo"),
+  minStock: z.coerce.number().int().min(0, "Estoque mínimo não pode ser negativo").default(DEFAULT_MIN_STOCK),
 });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearch } from "@/hooks/use-search";
-import { Product, CATEGORY_LOW_STOCK_THRESHOLDS } from "@shared/schema";
+import { Product, DEFAULT_MIN_STOCK } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import ProductForm from "./product-form";
 import DeleteConfirmation from "./delete-confirmation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import type { Column } from "@/components/ui/data-table";
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,20 +57,20 @@ export default function ProductsPage() {
     });
   };
 
-  const getStockBadge = (stock: number, category: string) => {
-    // Obter o limite de estoque baixo com base na categoria
-    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[category.toLowerCase()] || 5;
+  const getStockBadge = (stock: number, product: Product) => {
+    // Obter o limite de estoque baixo do próprio produto
+    const minStock = product.minStock || DEFAULT_MIN_STOCK;
     
     if (stock === 0) {
       return <Badge variant="danger">Sem estoque</Badge>;
-    } else if (stock <= lowStockThreshold) {
-      return <Badge variant="warning">Estoque baixo: {stock}</Badge>;
+    } else if (stock <= minStock) {
+      return <Badge variant="warning">Estoque baixo: {stock}/{minStock}</Badge>;
     } else {
       return <Badge variant="success">Em estoque: {stock}</Badge>;
     }
   };
 
-  const columns: Column<Product>[] = [
+  const columns = [
     {
       header: "Produto",
       accessor: (row: Product) => (
@@ -104,7 +103,7 @@ export default function ProductsPage() {
     {
       header: "Estoque",
       accessor: "stock",
-      cell: (value: number, row: Product) => getStockBadge(value, row.category),
+      cell: (value: number, row: Product) => getStockBadge(value, row),
     },
     {
       header: "Última Atualização",
