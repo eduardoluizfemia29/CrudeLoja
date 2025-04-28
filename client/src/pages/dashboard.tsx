@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Client, Product } from "@shared/schema";
+import { Client, Product, CATEGORY_LOW_STOCK_THRESHOLDS } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils/format";
 import { Loader2 } from "lucide-react";
 
@@ -16,7 +16,14 @@ export default function Dashboard() {
   // Calculate stats
   const totalClients = clients?.length || 0;
   const totalProducts = products?.length || 0;
-  const lowStockProducts = products?.filter(p => p.stock <= 5).length || 0;
+  
+  // Contagem de produtos com estoque baixo usando limites específicos por categoria
+  const lowStockProducts = products?.filter(product => {
+    if (product.stock === 0) return false; // Sem estoque é uma categoria diferente
+    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
+    return product.stock <= lowStockThreshold;
+  }).length || 0;
+  
   const outOfStockProducts = products?.filter(p => p.stock === 0).length || 0;
   
   // Calculate total inventory value
@@ -112,22 +119,33 @@ export default function Dashboard() {
             <CardTitle>Produtos com Estoque Baixo</CardTitle>
           </CardHeader>
           <CardContent>
-            {products && products.filter(p => p.stock <= 5).length > 0 ? (
+            {products && products.some(product => {
+              if (product.stock === 0) return true;
+              const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
+              return product.stock <= lowStockThreshold;
+            }) ? (
               <ul className="space-y-2">
                 {products
-                  .filter(p => p.stock <= 5)
+                  .filter(product => {
+                    if (product.stock === 0) return true;
+                    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
+                    return product.stock <= lowStockThreshold;
+                  })
                   .slice(0, 5)
-                  .map((product) => (
-                    <li key={product.id} className="p-2 hover:bg-gray-50 rounded flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-gray-500">{product.category}</div>
-                      </div>
-                      <div className={`text-sm font-medium ${product.stock === 0 ? 'text-red-600' : 'text-yellow-600'}`}>
-                        {product.stock === 0 ? 'Sem estoque' : `Estoque: ${product.stock}`}
-                      </div>
-                    </li>
-                  ))}
+                  .map((product) => {
+                    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[product.category.toLowerCase()] || 5;
+                    return (
+                      <li key={product.id} className="p-2 hover:bg-gray-50 rounded flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-gray-500">{product.category}</div>
+                        </div>
+                        <div className={`text-sm font-medium ${product.stock === 0 ? 'text-red-600' : 'text-yellow-600'}`}>
+                          {product.stock === 0 ? 'Sem estoque' : `Estoque: ${product.stock}/${lowStockThreshold}`}
+                        </div>
+                      </li>
+                    );
+                  })}
               </ul>
             ) : (
               <p className="text-gray-500">Todos os produtos têm estoque suficiente</p>

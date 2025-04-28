@@ -11,6 +11,7 @@ import ProductForm from "./product-form";
 import DeleteConfirmation from "./delete-confirmation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import type { Column } from "@/components/ui/data-table";
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
