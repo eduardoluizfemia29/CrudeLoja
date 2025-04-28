@@ -117,9 +117,10 @@ export default function SalesReportPage() {
   // Buscar itens de vendas para calcular produtos mais vendidos
   const { data: saleItems, isLoading: isLoadingSaleDetails } = useQuery({
     queryKey: ['/api/sale-items', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
-    enabled: sales && sales.length > 0 && products && products.length > 0,
+    // Removi a condição enabled para que os dados sejam carregados independentemente
     queryFn: async () => {
       try {
+        console.log("Fazendo requisição para:", `/api/sale-items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
         // Usar o novo endpoint dedicado
         const response = await fetch(`/api/sale-items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
         
@@ -127,7 +128,9 @@ export default function SalesReportPage() {
           throw new Error('Falha ao buscar itens de venda');
         }
         
-        return response.json();
+        const items = await response.json();
+        console.log("Itens de venda recebidos:", items);
+        return items;
       } catch (error) {
         console.error('Erro ao buscar itens de venda:', error);
         return [];
@@ -135,16 +138,37 @@ export default function SalesReportPage() {
     }
   });
   
+  // Interfaces para os dados da API
+  interface SaleItem {
+    id: number;
+    saleId: number;
+    productId: number;
+    quantity: number;
+    unitPrice: string | number;
+    total: string | number;
+    productName: string;
+    productPrice: string | number;
+  }
+  
+  interface DailySalesSummary {
+    date: string;
+    total: number | string;
+    count: number | string;
+  }
+  
   // Calcular produtos mais vendidos
   const calculateTopProductsFromSaleItems = () => {
     if (!saleItems || !products || saleItems.length === 0 || products.length === 0) {
+      console.log("Sem itens ou produtos para processar", { saleItems, products });
       return [];
     }
+    
+    console.log("Processando items para relatório:", saleItems);
     
     // Agrupar por produto e somar quantidades e valores
     const productMap: Record<number, { quantity: number, total: number }> = {};
     
-    saleItems.forEach(item => {
+    saleItems.forEach((item: SaleItem) => {
       if (!productMap[item.productId]) {
         productMap[item.productId] = { quantity: 0, total: 0 };
       }
@@ -238,11 +262,17 @@ export default function SalesReportPage() {
   
   // Calcular métricas resumidas
   const totalSales = hasData
-    ? salesSummary.reduce((sum, item) => sum + item.total, 0)
+    ? salesSummary.reduce((sum, item) => {
+        const itemTotal = typeof item.total === 'string' ? parseFloat(item.total) : item.total;
+        return sum + itemTotal;
+      }, 0)
     : 0;
     
   const totalTransactions = hasData
-    ? salesSummary.reduce((sum, item) => sum + item.count, 0)
+    ? salesSummary.reduce((sum, item) => {
+        const itemCount = typeof item.count === 'string' ? parseInt(item.count) : item.count;
+        return sum + itemCount;
+      }, 0)
     : 0;
     
   const averageTicket = totalTransactions > 0 
