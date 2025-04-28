@@ -10,6 +10,7 @@ import ClientsPage from "@/pages/clients";
 import ProductsPage from "@/pages/products";
 import ReportsPage from "@/pages/reports";
 import SalesPage from "@/pages/sales";
+import SalesReportPage from "@/pages/reports/sales-report";
 import { useState } from "react";
 
 function App() {

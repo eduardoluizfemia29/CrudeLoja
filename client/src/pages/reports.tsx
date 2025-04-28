@@ -6,7 +6,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart2 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("inventory");
@@ -117,6 +118,12 @@ export default function ReportsPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="inventory">Inventário</TabsTrigger>
           <TabsTrigger value="clients">Clientes</TabsTrigger>
+          <TabsTrigger value="sales" asChild>
+            <Link href="/reports/sales" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+              <BarChart2 className="h-4 w-4 mr-2" />
+              Vendas
+            </Link>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="inventory">
