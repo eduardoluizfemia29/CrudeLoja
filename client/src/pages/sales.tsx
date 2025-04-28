@@ -10,31 +10,39 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, Search, Package, CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 
 type CartItem = {
   product: Product;
@@ -56,6 +64,17 @@ export default function SalesPage() {
 
   // Filtrar apenas produtos com estoque
   const availableProducts = products?.filter(p => p.stock > 0) || [];
+  
+  // Estado para pesquisa de produtos
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Produtos filtrados pela busca
+  const filteredProducts = searchQuery.trim() === "" 
+    ? availableProducts 
+    : availableProducts.filter(product => 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   // Manipular adição de produto ao carrinho
   const handleAddToCart = () => {
@@ -226,33 +245,55 @@ export default function SalesPage() {
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Adicionar Produtos</CardTitle>
-            <CardDescription>Selecione os produtos para adicionar ao carrinho.</CardDescription>
+            <CardDescription>Pesquise e adicione produtos ao carrinho de compras.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="product-select">Produto</Label>
-                <Select 
-                  value={selectedProductId}
-                  onValueChange={setSelectedProductId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um produto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableProducts.length > 0 ? (
-                      availableProducts.map(product => (
-                        <SelectItem key={product.id} value={product.id.toString()}>
-                          {product.name} - {formatCurrency(Number(product.price))} - ({product.stock} em estoque)
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="none" disabled>Sem produtos disponíveis</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              {/* Campo de busca */}
+              <div>
+                <Label htmlFor="product-search">Buscar Produto</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500/50" />
+                  <Command className="rounded-lg border shadow-md">
+                    <CommandInput 
+                      placeholder="Buscar por nome ou categoria..." 
+                      className="h-9 pl-8"
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                    />
+                    {filteredProducts.length > 0 ? (
+                      <CommandList>
+                        <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredProducts.map(product => (
+                            <CommandItem
+                              key={product.id}
+                              value={product.id.toString()}
+                              onSelect={() => setSelectedProductId(product.id.toString())}
+                              className={`flex justify-between items-center cursor-pointer p-2 ${
+                                selectedProductId === product.id.toString() ? 'bg-primary/10' : ''
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{product.name}</span>
+                                <span className="text-sm text-gray-500">{product.category}</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-medium">{formatCurrency(Number(product.price))}</div>
+                                <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
+                                  {product.stock} em estoque
+                                </Badge>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    ) : null}
+                  </Command>
+                </div>
               </div>
               
+              {/* Quantidade */}
               <div>
                 <Label htmlFor="quantity">Quantidade</Label>
                 <div className="flex items-center">
@@ -284,15 +325,46 @@ export default function SalesPage() {
                   </Button>
                 </div>
               </div>
+              
+              {/* Botão para adicionar ao carrinho */}
+              <Button 
+                className="w-full mt-6"
+                onClick={handleAddToCart}
+                disabled={!selectedProductId || quantity < 1 || availableProducts.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Adicionar ao Carrinho
+              </Button>
             </div>
             
-            <Button 
-              className="w-full mt-4"
-              onClick={handleAddToCart}
-              disabled={!selectedProductId || quantity < 1 || availableProducts.length === 0}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Adicionar ao Carrinho
-            </Button>
+            {/* Produto selecionado */}
+            {selectedProductId && products && (
+              <div className="mt-4 p-3 border rounded-lg bg-accent/5">
+                <div className="flex items-center">
+                  <Package className="h-5 w-5 text-primary mr-2" />
+                  <span className="font-medium">Produto Selecionado:</span>
+                </div>
+                <div className="mt-2">
+                  {(() => {
+                    const product = products.find(p => p.id === parseInt(selectedProductId));
+                    return product ? (
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-gray-500">{product.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">{formatCurrency(Number(product.price))}</p>
+                          <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
+                            {product.stock} em estoque
+                          </Badge>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+            )}
+            
           </CardContent>
         </Card>
         
@@ -384,65 +456,20 @@ export default function SalesPage() {
         </Card>
       </div>
       
-      {/* Detalhe dos Produtos Disponíveis */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Produtos Disponíveis para Venda</CardTitle>
-          <CardDescription>Lista de todos os produtos com estoque disponível.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableCaption>Lista de produtos disponíveis para venda.</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Estoque</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {availableProducts.length > 0 ? (
-                availableProducts.map(product => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>{formatCurrency(Number(product.price))}</TableCell>
-                    <TableCell>
-                      <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"}>
-                        {product.stock} unid.
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedProductId(product.id.toString());
-                          setQuantity(1);
-                          const element = document.querySelector('#product-select');
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-1" /> Adicionar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4 text-gray-500">
-                    Não há produtos disponíveis no estoque.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Confirmação de venda concluída */}
+      {processSale.isSuccess && (
+        <Card className="mt-6 border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+              <h3 className="text-xl font-bold text-green-700">Venda Finalizada com Sucesso!</h3>
+              <p className="text-green-600 mt-2">
+                Os produtos foram baixados do estoque automaticamente.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
