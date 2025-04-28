@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 
 type ProductFormProps = {
   product?: Product | null;
@@ -241,9 +242,20 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Código SKU</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Código de referência (opcional)" {...field} />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl className="flex-1">
+                        <Input placeholder="Código de referência (opcional)" {...field} />
+                      </FormControl>
+                      <BarcodeScanner 
+                        buttonVariant="outline" 
+                        className="shrink-0"
+                        buttonLabel="Escanear" 
+                        onScan={(barcode) => {
+                          field.onChange(barcode);
+                          console.log("Código de barras escaneado:", barcode);
+                        }} 
+                      />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

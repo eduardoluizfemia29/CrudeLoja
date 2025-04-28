@@ -20,6 +20,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 import {
   Select,
   SelectContent,
@@ -76,7 +77,90 @@ export default function SalesPage() {
   // Produtos filtrados pela busca
   const filteredProducts = availableProducts.filter(product => matchesSearch(product, searchQuery));
 
-  // Manipular adição de produto ao carrinho
+  // Função para adicionar produto por código de barras
+  const handleBarcodeScanned = (barcode: string) => {
+    if (!products) return;
+    
+    console.log("Código de barras lido:", barcode);
+    
+    // Buscar produto pelo SKU
+    const product = products.find(p => p.sku === barcode);
+    
+    if (!product) {
+      toast({
+        title: "Produto não encontrado",
+        description: `Nenhum produto encontrado com o código ${barcode}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (product.stock <= 0) {
+      toast({
+        title: "Produto sem estoque",
+        description: `${product.name} está sem estoque disponível.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Selecionar o produto
+    setSelectedProductId(product.id.toString());
+    
+    // Opcionalmente, adicionar direto ao carrinho
+    addProductToCart(product.id, 1);
+    
+    toast({
+      title: "Produto encontrado",
+      description: `${product.name} adicionado ao carrinho.`
+    });
+  };
+  
+  // Função para adicionar produto ao carrinho
+  const addProductToCart = (productId: number, qty: number) => {
+    if (!products) return;
+    
+    const product = products.find(p => p.id === productId);
+    
+    if (!product) return;
+    
+    // Verificar estoque disponível
+    if (product.stock < qty) {
+      toast({
+        title: "Estoque insuficiente",
+        description: `Disponível apenas ${product.stock} unidades.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Verificar se o produto já está no carrinho
+    const existingItemIndex = cart.findIndex(item => item.product.id === productId);
+    
+    if (existingItemIndex >= 0) {
+      // Atualizar quantidade se o produto já estiver no carrinho
+      const updatedCart = [...cart];
+      const newQuantity = updatedCart[existingItemIndex].quantity + qty;
+      
+      // Verificar se a nova quantidade excede o estoque
+      if (newQuantity > product.stock) {
+        toast({
+          title: "Estoque insuficiente",
+          description: `Disponível apenas ${product.stock} unidades.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      updatedCart[existingItemIndex].quantity = newQuantity;
+      setCart(updatedCart);
+    } else {
+      // Adicionar novo produto ao carrinho
+      setCart([...cart, { product, quantity: qty }]);
+    }
+  };
+  
+  // Manipular adição de produto ao carrinho via formulário
   const handleAddToCart = () => {
     if (!selectedProductId || !products) return;
     
@@ -287,18 +371,25 @@ export default function SalesPage() {
               {/* Campo de busca */}
               <div>
                 <Label htmlFor="product-search">Buscar Produto</Label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Search className="h-4 w-4 text-primary" />
+                <div className="flex gap-2 mb-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <Search className="h-4 w-4 text-primary" />
+                    </div>
+                    <Input
+                      placeholder="Buscar por nome ou categoria..."
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        console.log("Valor da busca:", e.target.value);
+                        setSearchQuery(e.target.value);
+                      }}
+                    />
                   </div>
-                  <Input
-                    placeholder="Buscar por nome ou categoria..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      console.log("Valor da busca:", e.target.value);
-                      setSearchQuery(e.target.value);
-                    }}
+                  <BarcodeScanner
+                    buttonLabel="Escanear Código" 
+                    onScan={handleBarcodeScanned} 
+                    buttonVariant="outline"
                   />
                 </div>
                 
