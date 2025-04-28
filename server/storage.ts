@@ -2,6 +2,8 @@ import {
   clients, type Client, type InsertClient,
   products, type Product, type InsertProduct
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, ilike, or } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -20,125 +22,115 @@ export interface IStorage {
   deleteProduct(id: number): Promise<boolean>;
 }
 
-// In-memory storage implementation
-export class MemStorage implements IStorage {
-  private clients: Map<number, Client>;
-  private products: Map<number, Product>;
-  private clientId: number;
-  private productId: number;
-
-  constructor() {
-    this.clients = new Map();
-    this.products = new Map();
-    this.clientId = 1;
-    this.productId = 1;
-  }
-
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   // Client operations
   async getClients(search?: string): Promise<Client[]> {
-    let result = Array.from(this.clients.values());
-    
     if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(client => 
-        client.name.toLowerCase().includes(searchLower) ||
-        client.email.toLowerCase().includes(searchLower) ||
-        client.phone.toLowerCase().includes(searchLower) ||
-        client.address.toLowerCase().includes(searchLower) ||
-        client.city.toLowerCase().includes(searchLower)
-      );
+      const searchLower = `%${search.toLowerCase()}%`;
+      return db.select()
+        .from(clients)
+        .where(or(
+          ilike(clients.name, searchLower),
+          ilike(clients.email, searchLower),
+          ilike(clients.phone, searchLower),
+          ilike(clients.address, searchLower),
+          ilike(clients.city, searchLower)
+        ))
+        .execute();
     }
     
-    return result;
+    return db.select().from(clients).execute();
   }
 
   async getClient(id: number): Promise<Client | undefined> {
-    return this.clients.get(id);
+    const results = await db.select()
+      .from(clients)
+      .where(eq(clients.id, id))
+      .execute();
+    
+    return results.length > 0 ? results[0] : undefined;
   }
 
   async createClient(client: InsertClient): Promise<Client> {
-    const id = this.clientId++;
     const now = new Date();
-    const newClient: Client = { ...client, id, lastOrderDate: now };
-    this.clients.set(id, newClient);
+    const [newClient] = await db.insert(clients)
+      .values({ ...client, lastOrderDate: now })
+      .returning();
+    
     return newClient;
   }
 
   async updateClient(id: number, client: InsertClient): Promise<Client | undefined> {
-    const existingClient = this.clients.get(id);
+    const [updatedClient] = await db.update(clients)
+      .set(client)
+      .where(eq(clients.id, id))
+      .returning();
     
-    if (!existingClient) {
-      return undefined;
-    }
-    
-    const updatedClient: Client = { 
-      ...existingClient, 
-      ...client
-    };
-    
-    this.clients.set(id, updatedClient);
     return updatedClient;
   }
 
   async deleteClient(id: number): Promise<boolean> {
-    return this.clients.delete(id);
+    const result = await db.delete(clients)
+      .where(eq(clients.id, id))
+      .returning({ id: clients.id });
+    
+    return result.length > 0;
   }
 
   // Product operations
   async getProducts(search?: string): Promise<Product[]> {
-    let result = Array.from(this.products.values());
-    
     if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(product => 
-        product.name.toLowerCase().includes(searchLower) ||
-        product.description.toLowerCase().includes(searchLower) ||
-        product.category.toLowerCase().includes(searchLower) ||
-        (product.sku && product.sku.toLowerCase().includes(searchLower))
-      );
+      const searchLower = `%${search.toLowerCase()}%`;
+      return db.select()
+        .from(products)
+        .where(or(
+          ilike(products.name, searchLower),
+          ilike(products.description, searchLower),
+          ilike(products.category, searchLower),
+          ilike(products.sku || '', searchLower)
+        ))
+        .execute();
     }
     
-    return result;
+    return db.select().from(products).execute();
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const results = await db.select()
+      .from(products)
+      .where(eq(products.id, id))
+      .execute();
+    
+    return results.length > 0 ? results[0] : undefined;
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const id = this.productId++;
     const now = new Date();
-    const newProduct: Product = { 
-      ...product, 
-      id, 
-      updatedAt: now
-    };
+    const [newProduct] = await db.insert(products)
+      .values({ ...product, updatedAt: now })
+      .returning();
     
-    this.products.set(id, newProduct);
     return newProduct;
   }
 
   async updateProduct(id: number, product: InsertProduct): Promise<Product | undefined> {
-    const existingProduct = this.products.get(id);
-    
-    if (!existingProduct) {
-      return undefined;
-    }
-    
     const now = new Date();
-    const updatedProduct: Product = { 
-      ...existingProduct, 
-      ...product, 
-      updatedAt: now
-    };
+    const [updatedProduct] = await db.update(products)
+      .set({ ...product, updatedAt: now })
+      .where(eq(products.id, id))
+      .returning();
     
-    this.products.set(id, updatedProduct);
     return updatedProduct;
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    return this.products.delete(id);
+    const result = await db.delete(products)
+      .where(eq(products.id, id))
+      .returning({ id: products.id });
+    
+    return result.length > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
