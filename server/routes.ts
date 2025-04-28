@@ -122,10 +122,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/products`, async (req: Request, res: Response) => {
     try {
+      console.log("Received product data:", req.body);
       const validatedData = insertProductSchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const errorMessage = fromZodError(validatedData.error);
+        console.log("Validation error:", errorMessage.message);
         return res.status(400).json({ message: errorMessage.message });
       }
       

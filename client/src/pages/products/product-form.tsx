@@ -61,7 +61,7 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
   });
 
   const saveProduct = useMutation({
-    mutationFn: async (data: typeof form.getValues) => {
+    mutationFn: async (data: any) => {
       if (isEditing && product) {
         return await apiRequest('PUT', `/api/products/${product.id}`, data);
       } else {
@@ -76,8 +76,16 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
     },
   });
 
-  const onSubmit = (data: typeof form.getValues) => {
-    saveProduct.mutate(data);
+  const onSubmit = (data: any) => {
+    // Ensure price is sent as a string to match the server's expectation
+    // The schema will handle conversion through z.coerce
+    const formattedData = {
+      ...data,
+      price: data.price.toString(),
+      stock: Number(data.stock),
+    };
+    
+    saveProduct.mutate(formattedData);
   };
 
   return (
