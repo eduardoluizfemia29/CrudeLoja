@@ -1,9 +1,11 @@
 import { 
   clients, type Client, type InsertClient,
-  products, type Product, type InsertProduct
+  products, type Product, type InsertProduct,
+  sales, type Sale, type InsertSale,
+  saleItems, type SaleItem, type InsertSaleItem
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq, ilike, or, between, desc, sql, and, gte, lte } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -20,6 +22,13 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: InsertProduct): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
+  
+  // Sales operations
+  getSales(startDate?: Date, endDate?: Date): Promise<Sale[]>;
+  getSaleWithItems(id: number): Promise<{ sale: Sale, items: (SaleItem & { product: Product })[] } | undefined>;
+  createSale(sale: InsertSale, items: Omit<InsertSaleItem, "saleId">[]): Promise<Sale>;
+  getSalesByDateRange(startDate: Date, endDate: Date): Promise<Sale[]>;
+  getSalesSummaryByDay(startDate: Date, endDate: Date): Promise<{ date: string, total: number, count: number }[]>;
 }
 
 // Database storage implementation
@@ -130,6 +139,122 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: products.id });
     
     return result.length > 0;
+  }
+
+  // Sales operations
+  async getSales(startDate?: Date, endDate?: Date): Promise<Sale[]> {
+    if (startDate && endDate) {
+      return db.select()
+        .from(sales)
+        .where(and(
+          gte(sales.date, startDate),
+          lte(sales.date, endDate)
+        ))
+        .orderBy(desc(sales.date))
+        .execute();
+    }
+    
+    return db.select()
+      .from(sales)
+      .orderBy(desc(sales.date))
+      .execute();
+  }
+
+  async getSaleWithItems(id: number): Promise<{ sale: Sale, items: (SaleItem & { product: Product })[] } | undefined> {
+    const result = await db.select()
+      .from(sales)
+      .where(eq(sales.id, id))
+      .execute();
+
+    if (result.length === 0) {
+      return undefined;
+    }
+
+    const sale = result[0];
+    
+    const items = await db.select({
+      ...saleItems,
+      product: products
+    })
+    .from(saleItems)
+    .innerJoin(products, eq(saleItems.productId, products.id))
+    .where(eq(saleItems.saleId, id))
+    .execute();
+
+    return {
+      sale,
+      items
+    };
+  }
+
+  async createSale(sale: InsertSale, items: Omit<InsertSaleItem, "saleId">[]): Promise<Sale> {
+    // Use a transaction to ensure atomicity
+    return db.transaction(async (tx) => {
+      // Insert the sale
+      const [newSale] = await tx.insert(sales)
+        .values(sale)
+        .returning();
+      
+      // Insert all items
+      if (items.length > 0) {
+        await tx.insert(saleItems)
+          .values(
+            items.map(item => ({
+              ...item,
+              saleId: newSale.id
+            }))
+          );
+        
+        // Update product stock
+        for (const item of items) {
+          await tx.update(products)
+            .set({
+              stock: sql`${products.stock} - ${item.quantity}`
+            })
+            .where(eq(products.id, item.productId));
+        }
+        
+        // Update client's last order date if client is specified
+        if (newSale.clientId) {
+          await tx.update(clients)
+            .set({
+              lastOrderDate: newSale.date
+            })
+            .where(eq(clients.id, newSale.clientId));
+        }
+      }
+      
+      return newSale;
+    });
+  }
+
+  async getSalesByDateRange(startDate: Date, endDate: Date): Promise<Sale[]> {
+    return db.select()
+      .from(sales)
+      .where(and(
+        gte(sales.date, startDate),
+        lte(sales.date, endDate)
+      ))
+      .orderBy(desc(sales.date))
+      .execute();
+  }
+
+  async getSalesSummaryByDay(startDate: Date, endDate: Date): Promise<{ date: string, total: number, count: number }[]> {
+    const result = await db.select({
+      date: sql`DATE(${sales.date})::text`,
+      total: sql`SUM(${sales.total})`,
+      count: sql`COUNT(${sales.id})`
+    })
+    .from(sales)
+    .where(and(
+      gte(sales.date, startDate),
+      lte(sales.date, endDate)
+    ))
+    .groupBy(sql`DATE(${sales.date})`)
+    .orderBy(sql`DATE(${sales.date})`)
+    .execute();
+    
+    return result;
   }
 }
 

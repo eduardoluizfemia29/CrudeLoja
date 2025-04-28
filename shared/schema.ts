@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Valores padrão para estoque baixo (usado quando minStock não está definido)
 export const DEFAULT_MIN_STOCK = 5;
@@ -56,3 +57,51 @@ export const productValidationSchema = insertProductSchema.extend({
   stock: z.coerce.number().int().min(0, "Estoque não pode ser negativo"),
   minStock: z.coerce.number().int().min(0, "Estoque mínimo não pode ser negativo").default(DEFAULT_MIN_STOCK),
 });
+
+// Sales schema
+export const sales = pgTable("sales", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").defaultNow().notNull(),
+  clientId: integer("client_id").references(() => clients.id),
+  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
+});
+
+// Sale items schema
+export const saleItems = pgTable("sale_items", {
+  id: serial("id").primaryKey(),
+  saleId: integer("sale_id").notNull().references(() => sales.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+});
+
+// Relations
+export const salesRelations = relations(sales, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [sales.clientId],
+    references: [clients.id],
+  }),
+  items: many(saleItems),
+}));
+
+export const saleItemsRelations = relations(saleItems, ({ one }) => ({
+  sale: one(sales, {
+    fields: [saleItems.saleId],
+    references: [sales.id],
+  }),
+  product: one(products, {
+    fields: [saleItems.productId],
+    references: [products.id],
+  }),
+}));
+
+// Sales schemas
+export const insertSaleSchema = createInsertSchema(sales).omit({ id: true });
+export type InsertSale = z.infer<typeof insertSaleSchema>;
+export type Sale = typeof sales.$inferSelect;
+
+export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true });
+export type InsertSaleItem = z.infer<typeof insertSaleItemSchema>;
+export type SaleItem = typeof saleItems.$inferSelect;
