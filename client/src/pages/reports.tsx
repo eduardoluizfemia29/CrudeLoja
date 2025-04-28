@@ -54,8 +54,7 @@ export default function ReportsPage() {
     },
     {
       header: "Último Pedido",
-      accessor: (row: Client) => row.lastOrderDate,
-      cell: (value: Date | null) => formatDate(value),
+      accessor: (row: Client) => formatDate(row.lastOrderDate),
     },
   ];
 
