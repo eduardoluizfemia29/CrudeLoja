@@ -19,11 +19,14 @@ export default function ReportsPage() {
     queryKey: ['/api/products'],
   });
 
-  const getStockBadge = (stock: number) => {
+  const getStockBadge = (stock: number, row: Product) => {
+    // Obter o limite de estoque baixo do próprio produto
+    const minStock = row.minStock || 5;
+    
     if (stock === 0) {
       return <Badge variant="danger">Sem estoque</Badge>;
-    } else if (stock <= 5) {
-      return <Badge variant="warning">Estoque baixo: {stock}</Badge>;
+    } else if (stock <= minStock) {
+      return <Badge variant="warning">Estoque baixo: {stock}/{minStock}</Badge>;
     } else {
       return <Badge variant="success">Em estoque: {stock}</Badge>;
     }
@@ -79,7 +82,7 @@ export default function ReportsPage() {
       cell: (value: number, row: Product) => (
         <div className="flex items-center">
           <span className="mr-2">{value}</span>
-          {getStockBadge(value)}
+          {getStockBadge(value, row)}
         </div>
       ),
     },

@@ -96,6 +96,9 @@ export default function ProductForm({ product, onClose, onSaved }: ProductFormPr
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Produto" : "Adicionar Produto"}</DialogTitle>
+          <p className="text-sm text-gray-500">
+            Preencha os detalhes do produto abaixo para {isEditing ? "atualizar" : "adicionar"} ao sistema.
+          </p>
         </DialogHeader>
 
         <Form {...form}>

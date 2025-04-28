@@ -77,6 +77,9 @@ export default function ClientForm({ client, onClose, onSaved }: ClientFormProps
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Cliente" : "Adicionar Cliente"}</DialogTitle>
+          <p className="text-sm text-gray-500">
+            Preencha os detalhes do cliente abaixo para {isEditing ? "atualizar" : "adicionar"} ao sistema.
+          </p>
         </DialogHeader>
 
         <Form {...form}>
