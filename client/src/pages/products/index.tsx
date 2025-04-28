@@ -108,8 +108,7 @@ export default function ProductsPage() {
     },
     {
       header: "Última Atualização",
-      accessor: (row: Product) => row.updatedAt,
-      cell: (value: Date | null, row: Product) => formatDate(value),
+      accessor: (row: Product) => formatDate(row.updatedAt),
     },
   ];
 

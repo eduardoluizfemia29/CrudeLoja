@@ -40,13 +40,18 @@ export function useSearch<T>({
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.status}`);
       }
-      return response.json();
+      const result = await response.json();
+      console.log("Dados recebidos:", result);
+      return result;
     },
-    enabled: true,
     initialData: initialData,
+    staleTime: 0, // Sempre considerar os dados obsoletos para forçar uma busca inicial
+    refetchOnMount: true, // Refaz a consulta quando o componente é montado
+    refetchOnWindowFocus: false, // Não refaz a consulta quando a janela recebe foco
   });
   
   const refreshData = useCallback(() => {
+    console.log("Atualizando dados...");
     refetch();
   }, [refetch]);
   
