@@ -37,6 +37,7 @@ function App() {
               <Route path="/products" component={ProductsPage} />
               <Route path="/sales" component={SalesPage} />
               <Route path="/reports" component={ReportsPage} />
+              <Route path="/reports/sales" component={SalesReportPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
