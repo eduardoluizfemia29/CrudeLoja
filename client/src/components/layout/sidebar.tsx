@@ -7,7 +7,8 @@ import {
   LogOut,
   UtensilsCrossed,
   ShoppingBasket,
-  Droplets
+  Droplets,
+  ShoppingCart
 } from "lucide-react";
 
 export function Sidebar() {
@@ -21,6 +22,7 @@ export function Sidebar() {
     { name: "Dashboard", icon: HomeIcon, path: "/" },
     { name: "Clientes", icon: Users, path: "/clients" },
     { name: "Produtos", icon: ShoppingBasket, path: "/products" },
+    { name: "Vendas", icon: ShoppingCart, path: "/sales" },
     { name: "Relatórios", icon: BarChart3, path: "/reports" }
   ];
 

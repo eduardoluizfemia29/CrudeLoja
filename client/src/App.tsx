@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import ClientsPage from "@/pages/clients";
 import ProductsPage from "@/pages/products";
 import ReportsPage from "@/pages/reports";
+import SalesPage from "@/pages/sales";
 import { useState } from "react";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
               <Route path="/" component={Dashboard} />
               <Route path="/clients" component={ClientsPage} />
               <Route path="/products" component={ProductsPage} />
+              <Route path="/sales" component={SalesPage} />
               <Route path="/reports" component={ReportsPage} />
               <Route component={NotFound} />
             </Switch>

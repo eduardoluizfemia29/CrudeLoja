@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { Menu, UtensilsCrossed, ShoppingBasket, HomeIcon, Users, BarChart3 } from "lucide-react";
+import { Menu, UtensilsCrossed, ShoppingBasket, HomeIcon, Users, BarChart3, ShoppingCart } from "lucide-react";
 
 type MobileNavProps = {
   isOpen: boolean;
@@ -61,6 +61,14 @@ export function MobileNav({ isOpen, setIsOpen }: MobileNavProps) {
             }`}>
               <ShoppingBasket className="w-5 h-5 mr-3" />
               Produtos
+            </a>
+          </Link>
+          <Link href="/sales">
+            <a className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+              isActive('/sales') ? 'text-primary bg-primary/10' : 'text-gray-700 hover:bg-accent/20'
+            }`}>
+              <ShoppingCart className="w-5 h-5 mr-3" />
+              Vendas
             </a>
           </Link>
           <Link href="/reports">
