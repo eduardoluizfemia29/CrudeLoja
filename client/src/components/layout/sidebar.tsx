@@ -4,7 +4,10 @@ import {
   Users, 
   Package, 
   BarChart3, 
-  LogOut 
+  LogOut,
+  UtensilsCrossed,
+  ShoppingBasket,
+  Droplets
 } from "lucide-react";
 
 export function Sidebar() {
@@ -17,14 +20,18 @@ export function Sidebar() {
   const navItems = [
     { name: "Dashboard", icon: HomeIcon, path: "/" },
     { name: "Clientes", icon: Users, path: "/clients" },
-    { name: "Produtos", icon: Package, path: "/products" },
+    { name: "Produtos", icon: ShoppingBasket, path: "/products" },
     { name: "Relatórios", icon: BarChart3, path: "/reports" }
   ];
 
   return (
     <aside className="bg-white border-r border-gray-200 w-full md:w-64 md:min-h-screen md:flex md:flex-col md:fixed md:inset-y-0 hidden md:block">
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-800">SG Loja</h1>
+      <div className="p-4 border-b border-gray-200 bg-primary/10">
+        <div className="flex items-center">
+          <UtensilsCrossed className="h-6 w-6 text-primary mr-2" />
+          <h1 className="text-xl font-bold text-primary font-barriecito">Casa do Norte</h1>
+        </div>
+        <p className="text-xs text-gray-600 mt-1">Sistema de Gerenciamento</p>
       </div>
       
       <nav className="flex-1 p-4 space-y-1">
@@ -32,8 +39,8 @@ export function Sidebar() {
           <Link key={item.path} href={item.path}>
             <a className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-md group
               ${isActive(item.path) 
-                ? "bg-blue-50 text-primary" 
-                : "text-gray-700 hover:bg-gray-100"}`}
+                ? "bg-primary/10 text-primary" 
+                : "text-gray-700 hover:bg-accent/20"}`}
             >
               <item.icon 
                 className={`w-5 h-5 mr-3 ${isActive(item.path) ? "text-primary" : "text-gray-500"}`} 
