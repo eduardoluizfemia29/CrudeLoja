@@ -19,14 +19,7 @@ import { ShoppingCart, Trash2, Plus, Minus, Search, Package, CheckCircle2 } from
 import { formatCurrency } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
-import { 
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -68,13 +61,20 @@ export default function SalesPage() {
   // Estado para pesquisa de produtos
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Função para verificar se o produto corresponde à busca
+  const matchesSearch = (product: Product, search: string) => {
+    if (!search || search.trim() === "") return true;
+    const searchLower = search.toLowerCase().trim();
+    const nameLower = product.name.toLowerCase();
+    const categoryLower = product.category.toLowerCase();
+    
+    console.log(`Verificando busca: "${searchLower}" em: "${nameLower}" ou "${categoryLower}"`);
+    
+    return nameLower.includes(searchLower) || categoryLower.includes(searchLower);
+  };
+  
   // Produtos filtrados pela busca
-  const filteredProducts = searchQuery.trim() === "" 
-    ? availableProducts 
-    : availableProducts.filter(product => 
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const filteredProducts = availableProducts.filter(product => matchesSearch(product, searchQuery));
 
   // Manipular adição de produto ao carrinho
   const handleAddToCart = () => {
@@ -252,40 +252,49 @@ export default function SalesPage() {
               {/* Campo de busca */}
               <div>
                 <Label htmlFor="product-search">Buscar Produto</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500/50" />
-                  <Command className="rounded-lg border shadow-md">
-                    <CommandInput 
-                      placeholder="Buscar por nome ou categoria..." 
-                      className="h-9 pl-8"
-                      value={searchQuery}
-                      onValueChange={setSearchQuery}
-                    />
-                    <CommandList>
-                      <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                      <CommandGroup heading="Produtos disponíveis">
-                        {filteredProducts.map(product => (
-                          <CommandItem
-                            key={product.id}
-                            value={product.id.toString()}
-                            onSelect={() => setSelectedProductId(product.id.toString())}
-                            className="flex justify-between items-center cursor-pointer p-2"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{product.name}</span>
-                              <span className="text-sm text-gray-500">{product.category}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-medium">{formatCurrency(Number(product.price))}</div>
-                              <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
-                                {product.stock} em estoque
-                              </Badge>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+                <div className="flex items-center border rounded">
+                  <Search className="ml-2 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Buscar por nome ou categoria..."
+                    className="border-0 focus-visible:ring-0"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      console.log("Valor da busca:", e.target.value);
+                      setSearchQuery(e.target.value);
+                    }}
+                  />
+                </div>
+                
+                <div className="mt-2 border rounded-lg shadow-sm max-h-52 overflow-auto">
+                  {filteredProducts.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>
+                  ) : (
+                    <div className="py-2">
+                      <div className="px-3 mb-2 text-xs font-medium text-gray-500">
+                        Produtos disponíveis ({filteredProducts.length})
+                      </div>
+                      {filteredProducts.map(product => (
+                        <div
+                          key={product.id}
+                          onClick={() => setSelectedProductId(product.id.toString())}
+                          className={`flex justify-between items-center px-3 py-2 cursor-pointer hover:bg-accent/5 ${
+                            selectedProductId === product.id.toString() ? 'bg-primary/10' : ''
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{product.name}</span>
+                            <span className="text-xs text-gray-500">{product.category}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium">{formatCurrency(Number(product.price))}</div>
+                            <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
+                              {product.stock} em estoque
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -360,7 +369,6 @@ export default function SalesPage() {
                 </div>
               </div>
             )}
-            
           </CardContent>
         </Card>
         
