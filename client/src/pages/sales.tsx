@@ -252,11 +252,13 @@ export default function SalesPage() {
               {/* Campo de busca */}
               <div>
                 <Label htmlFor="product-search">Buscar Produto</Label>
-                <div className="flex items-center border rounded">
-                  <Search className="ml-2 h-4 w-4 text-gray-500" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="h-4 w-4 text-primary" />
+                  </div>
                   <Input
                     placeholder="Buscar por nome ou categoria..."
-                    className="border-0 focus-visible:ring-0"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
                     value={searchQuery}
                     onChange={(e) => {
                       console.log("Valor da busca:", e.target.value);
@@ -265,12 +267,12 @@ export default function SalesPage() {
                   />
                 </div>
                 
-                <div className="mt-2 border rounded-lg shadow-sm max-h-52 overflow-auto">
+                <div className="mt-3 border rounded-lg shadow-sm max-h-52 overflow-auto">
                   {filteredProducts.length === 0 ? (
                     <div className="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>
                   ) : (
                     <div className="py-2">
-                      <div className="px-3 mb-2 text-xs font-medium text-gray-500">
+                      <div className="px-3 mb-2 text-xs font-medium text-muted-foreground border-b pb-1">
                         Produtos disponíveis ({filteredProducts.length})
                       </div>
                       {filteredProducts.map(product => (
@@ -279,11 +281,11 @@ export default function SalesPage() {
                           onClick={() => setSelectedProductId(product.id.toString())}
                           className={`flex justify-between items-center px-3 py-2 cursor-pointer hover:bg-accent/5 ${
                             selectedProductId === product.id.toString() ? 'bg-primary/10' : ''
-                          }`}
+                          } transition-colors duration-150`}
                         >
                           <div className="flex flex-col">
                             <span className="font-medium">{product.name}</span>
-                            <span className="text-xs text-gray-500">{product.category}</span>
+                            <span className="text-xs text-muted-foreground">{product.category}</span>
                           </div>
                           <div className="text-right">
                             <div className="font-medium">{formatCurrency(Number(product.price))}</div>
