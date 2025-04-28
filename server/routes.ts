@@ -218,22 +218,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/sales`, async (req: Request, res: Response) => {
     try {
-      const { sale, items } = req.body;
-      
-      const validatedSale = insertSaleSchema.safeParse(sale);
-      
-      if (!validatedSale.success) {
-        const errorMessage = fromZodError(validatedSale.error);
-        return res.status(400).json({ message: errorMessage.message });
+      // Formato direto enviado pelo frontend
+      if (req.body.items && req.body.date && req.body.total) {
+        const sale = {
+          clientId: req.body.clientId || null,
+          date: req.body.date,
+          total: req.body.total
+        };
+        
+        const items = req.body.items;
+        
+        if (!Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ message: "Sale must have at least one item" });
+        }
+        
+        const newSale = await storage.createSale(sale, items);
+        return res.status(201).json(newSale);
+      } 
+      // Formato alternativo
+      else if (req.body.sale && req.body.items) {
+        const { sale, items } = req.body;
+        
+        const validatedSale = insertSaleSchema.safeParse(sale);
+        
+        if (!validatedSale.success) {
+          const errorMessage = fromZodError(validatedSale.error);
+          return res.status(400).json({ message: errorMessage.message });
+        }
+        
+        // Validate each item
+        if (!Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ message: "Sale must have at least one item" });
+        }
+        
+        const newSale = await storage.createSale(validatedSale.data, items);
+        return res.status(201).json(newSale);
+      } else {
+        return res.status(400).json({ message: "Invalid sale data format" });
       }
-      
-      // Validate each item
-      if (!Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: "Sale must have at least one item" });
-      }
-      
-      const newSale = await storage.createSale(validatedSale.data, items);
-      res.status(201).json(newSale);
     } catch (error) {
       console.error("Error creating sale:", error);
       res.status(500).json({ message: "Failed to create sale" });

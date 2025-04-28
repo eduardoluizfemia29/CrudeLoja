@@ -171,8 +171,8 @@ export default function SalesPage() {
   const processSale = useMutation({
     mutationFn: async (saleData: any) => {
       try {
-        // 1. Primeiro criar o registro de venda
-        const saleResponse = await apiRequest('POST', '/api/sales', {
+        // Formato simplificado para o backend
+        const saleRequest = {
           clientId: null, // Venda sem cliente associado 
           date: new Date().toISOString(),
           total: saleData.total.toString(),
@@ -182,27 +182,46 @@ export default function SalesPage() {
             unitPrice: item.product.price,
             total: (Number(item.product.price) * item.quantity).toString()
           }))
+        };
+        
+        // 1. Primeiro criar o registro de venda
+        const saleResponse = await fetch('/api/sales', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(saleRequest),
         });
         
-        if (!saleResponse) {
+        if (!saleResponse.ok) {
+          console.error('Erro na resposta do servidor:', await saleResponse.text());
           throw new Error('Erro ao criar registro de venda');
         }
         
-        console.log('Venda registrada:', saleResponse);
+        const saleResult = await saleResponse.json();
+        console.log('Venda registrada:', saleResult);
         
         // 2. Atualizar o estoque de cada produto
-        const updatePromises = saleData.items.map((item: CartItem) => {
+        for (const item of saleData.items) {
           const newStock = item.product.stock - item.quantity;
-          return apiRequest('PUT', `/api/products/${item.product.id}`, {
-            ...item.product,
-            stock: newStock
+          const updateResponse = await fetch(`/api/products/${item.product.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...item.product,
+              stock: newStock
+            }),
           });
-        });
+          
+          if (!updateResponse.ok) {
+            console.error('Erro ao atualizar produto:', await updateResponse.text());
+            throw new Error(`Erro ao atualizar estoque do produto ${item.product.name}`);
+          }
+        }
         
-        const updatedProducts = await Promise.all(updatePromises);
-        console.log('Produtos atualizados:', updatedProducts);
-        
-        return { sale: saleResponse, products: updatedProducts };
+        return saleResult;
       } catch (error) {
         console.error('Erro ao processar venda:', error);
         throw error;
