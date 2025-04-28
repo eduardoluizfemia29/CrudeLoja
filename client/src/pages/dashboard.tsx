@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from "@tanstack/react-query";
 import { Client, Product, DEFAULT_MIN_STOCK } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils/format";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, ShoppingBasket, AlertCircle, DollarSign, UtensilsCrossed, Droplets } from "lucide-react";
 
 export default function Dashboard() {
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
@@ -41,39 +41,51 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
+      <div className="mb-8 rounded-lg bg-primary/10 p-6 shadow-sm border border-primary/20">
+        <div className="flex items-center gap-4">
+          <UtensilsCrossed className="h-10 w-10 text-primary" />
+          <div>
+            <h2 className="text-3xl font-bold text-primary mb-1">Dashboard Casa do Norte</h2>
+            <p className="text-gray-600">Bem-vindo ao sistema de gerenciamento de produtos típicos do Norte e Nordeste</p>
+          </div>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden border-t-4 border-t-primary">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-gray-500">Total de Clientes</CardTitle>
+            <Users className="h-5 w-5 text-primary opacity-70" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totalClients}</p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden border-t-4 border-t-accent">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-gray-500">Total de Produtos</CardTitle>
+            <ShoppingBasket className="h-5 w-5 text-accent opacity-70" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totalProducts}</p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden border-t-4 border-t-yellow-500">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-gray-500">Produtos com Estoque Baixo</CardTitle>
+            <AlertCircle className="h-5 w-5 text-yellow-500 opacity-70" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-yellow-600">{lowStockProducts}</p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden border-t-4 border-t-red-500">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-gray-500">Produtos Sem Estoque</CardTitle>
+            <AlertCircle className="h-5 w-5 text-red-500 opacity-70" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">{outOfStockProducts}</p>
@@ -82,10 +94,13 @@ export default function Dashboard() {
       </div>
       
       <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Valor Total do Inventário</CardTitle>
-            <CardDescription>Valor total de todos os produtos em estoque</CardDescription>
+        <Card className="overflow-hidden border-l-4 border-l-secondary">
+          <CardHeader className="flex flex-row items-center">
+            <div className="flex-1">
+              <CardTitle>Valor Total do Inventário</CardTitle>
+              <CardDescription>Valor total de todos os produtos em estoque</CardDescription>
+            </div>
+            <DollarSign className="h-8 w-8 text-secondary" />
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-primary">{formatCurrency(inventoryValue)}</p>
@@ -94,15 +109,16 @@ export default function Dashboard() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between bg-primary/5">
             <CardTitle>Clientes Recentes</CardTitle>
+            <Users className="h-5 w-5 text-primary" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="mt-4">
             {clients && clients.length > 0 ? (
               <ul className="space-y-2">
                 {clients.slice(0, 5).map((client) => (
-                  <li key={client.id} className="p-2 hover:bg-gray-50 rounded">
+                  <li key={client.id} className="p-2 hover:bg-accent/10 rounded-rustic transition-colors">
                     <div className="font-medium">{client.name}</div>
                     <div className="text-sm text-gray-500">{client.email}</div>
                   </li>
@@ -114,11 +130,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between bg-primary/5">
             <CardTitle>Produtos com Estoque Baixo</CardTitle>
+            <ShoppingBasket className="h-5 w-5 text-primary" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="mt-4">
             {products && products.some(product => {
               if (product.stock === 0) return true;
               const minStock = product.minStock || DEFAULT_MIN_STOCK;
@@ -135,13 +152,18 @@ export default function Dashboard() {
                   .map((product) => {
                     const minStock = product.minStock || DEFAULT_MIN_STOCK;
                     return (
-                      <li key={product.id} className="p-2 hover:bg-gray-50 rounded flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.category}</div>
+                      <li key={product.id} className="p-2 hover:bg-accent/10 rounded-rustic flex justify-between items-center transition-colors">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <Droplets className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm text-gray-500">{product.category}</div>
+                          </div>
                         </div>
-                        <div className={`text-sm font-medium ${product.stock === 0 ? 'text-red-600' : 'text-yellow-600'}`}>
-                          {product.stock === 0 ? 'Sem estoque' : `Estoque: ${product.stock}/${minStock}`}
+                        <div className={`text-sm font-medium px-2 py-1 rounded-full ${product.stock === 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {product.stock === 0 ? 'Sem estoque' : `${product.stock}/${minStock}`}
                         </div>
                       </li>
                     );
