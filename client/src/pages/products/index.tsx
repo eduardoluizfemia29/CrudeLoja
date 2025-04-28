@@ -21,7 +21,8 @@ export default function ProductsPage() {
 
   const { data: products, isLoading, refreshData } = useSearch<Product>({
     queryKey: '/api/products',
-    searchQuery
+    searchQuery,
+    debounceMs: 300
   });
 
   const handleAddProduct = () => {
