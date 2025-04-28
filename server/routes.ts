@@ -239,9 +239,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newSale = await storage.createSale(sale, req.body.items);
           console.log('Venda criada com sucesso:', newSale);
           return res.status(201).json(newSale);
-        } catch (storageError) {
+        } catch (storageError: any) {
           console.error('Erro no storage ao criar venda:', storageError);
-          return res.status(500).json({ message: "Error in storage layer: " + storageError.message });
+          return res.status(500).json({ message: "Error in storage layer: " + (storageError?.message || 'Unknown error') });
         }
       } 
       // Formato alternativo
@@ -270,17 +270,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newSale = await storage.createSale(saleWithDefaults, items);
           console.log('Venda criada com sucesso:', newSale);
           return res.status(201).json(newSale);
-        } catch (storageError) {
+        } catch (storageError: any) {
           console.error('Erro no storage ao criar venda:', storageError);
-          return res.status(500).json({ message: "Error in storage layer: " + storageError.message });
+          return res.status(500).json({ message: "Error in storage layer: " + (storageError?.message || 'Unknown error') });
         }
       } else {
         console.error('Formato de dados inválido:', req.body);
         return res.status(400).json({ message: "Invalid sale data format" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating sale:", error);
-      res.status(500).json({ message: "Failed to create sale: " + (error.message || 'Unknown error') });
+      res.status(500).json({ message: "Failed to create sale: " + (error?.message || 'Unknown error') });
     }
   });
 

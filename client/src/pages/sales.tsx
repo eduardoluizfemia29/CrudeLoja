@@ -176,16 +176,18 @@ export default function SalesPage() {
           clientId: null, // Venda sem cliente associado 
           date: new Date().toISOString(),
           total: saleData.total.toString(),
-          items: saleData.items.map((item: CartItem) => ({
-            productId: item.product.id,
+          items: saleData.items.map((item: any) => ({
+            productId: item.productId,
             quantity: item.quantity,
-            unitPrice: item.product.price,
-            total: (Number(item.product.price) * item.quantity).toString()
+            unitPrice: item.unitPrice,
+            total: item.total
           }))
         };
         
-        // 1. Primeiro criar o registro de venda
-        const saleResponse = await fetch('/api/sales', {
+        console.log('Enviando requisição de venda:', JSON.stringify(saleRequest, null, 2));
+        
+        // Usar fetch diretamente para compatibilidade
+        const response = await fetch('/api/sales', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -193,38 +195,19 @@ export default function SalesPage() {
           body: JSON.stringify(saleRequest),
         });
         
-        if (!saleResponse.ok) {
-          console.error('Erro na resposta do servidor:', await saleResponse.text());
-          throw new Error('Erro ao criar registro de venda');
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Erro ao finalizar venda');
         }
         
-        const saleResult = await saleResponse.json();
-        console.log('Venda registrada:', saleResult);
+        const result = await response.json();
         
-        // 2. Atualizar o estoque de cada produto
-        for (const item of saleData.items) {
-          const newStock = item.product.stock - item.quantity;
-          const updateResponse = await fetch(`/api/products/${item.product.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...item.product,
-              stock: newStock
-            }),
-          });
-          
-          if (!updateResponse.ok) {
-            console.error('Erro ao atualizar produto:', await updateResponse.text());
-            throw new Error(`Erro ao atualizar estoque do produto ${item.product.name}`);
-          }
-        }
+        console.log('Venda registrada com sucesso:', result);
         
-        return saleResult;
-      } catch (error) {
+        return result;
+      } catch (error: any) {
         console.error('Erro ao processar venda:', error);
-        throw error;
+        throw new Error(error?.message || 'Erro ao finalizar venda');
       }
     },
     onSuccess: () => {
