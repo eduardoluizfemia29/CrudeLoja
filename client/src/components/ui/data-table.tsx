@@ -8,9 +8,9 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 
-interface Column<T> {
+type Column<T> = {
   header: string;
-  accessor: ((row: T) => any);
+  accessor: keyof T | ((row: T) => React.ReactNode);
   cell?: (value: any, row: T) => React.ReactNode;
 };
 
@@ -103,7 +103,9 @@ export function DataTable<T>({
               {data.map((row) => (
                 <tr key={keyExtractor(row)} className="hover:bg-gray-50">
                   {columns.map((column, index) => {
-                    const value = column.accessor(row);
+                    const value = typeof column.accessor === 'function' 
+                      ? column.accessor(row) 
+                      : row[column.accessor as keyof T];
                     
                     return (
                       <td 

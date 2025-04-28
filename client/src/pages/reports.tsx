@@ -32,18 +32,18 @@ export default function ReportsPage() {
   const clientColumns = [
     {
       header: "Nome",
-      accessor: "name",
+      accessor: (row: Client) => row.name,
       cell: (value: string) => (
         <span className="font-medium text-gray-900">{value}</span>
       ),
     },
     {
       header: "Email",
-      accessor: "email"
+      accessor: (row: Client) => row.email
     },
     {
       header: "Telefone",
-      accessor: "phone"
+      accessor: (row: Client) => row.phone
     },
     {
       header: "Cidade/Estado",
@@ -51,31 +51,31 @@ export default function ReportsPage() {
     },
     {
       header: "Último Pedido",
-      accessor: "lastOrderDate",
-      cell: (value: string) => formatDate(value),
+      accessor: (row: Client) => row.lastOrderDate,
+      cell: (value: Date | null) => formatDate(value),
     },
   ];
 
   const productColumns = [
     {
       header: "Produto",
-      accessor: "name",
+      accessor: (row: Product) => row.name,
       cell: (value: string) => (
         <span className="font-medium text-gray-900">{value}</span>
       ),
     },
     {
       header: "Categoria",
-      accessor: "category"
+      accessor: (row: Product) => row.category
     },
     {
       header: "Preço",
-      accessor: "price",
-      cell: (value: number) => formatCurrency(Number(value)),
+      accessor: (row: Product) => row.price,
+      cell: (value: string) => formatCurrency(Number(value)),
     },
     {
       header: "Estoque",
-      accessor: "stock",
+      accessor: (row: Product) => row.stock,
       cell: (value: number, row: Product) => (
         <div className="flex items-center">
           <span className="mr-2">{value}</span>
