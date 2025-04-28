@@ -80,7 +80,6 @@ export default function ReportsPage() {
       accessor: (row: Product) => row.stock,
       cell: (value: number, row: Product) => (
         <div className="flex items-center">
-          <span className="mr-2">{value}</span>
           {getStockBadge(value, row)}
         </div>
       ),
