@@ -45,8 +45,8 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <UtensilsCrossed className="h-10 w-10 text-primary" />
           <div>
-            <h2 className="text-3xl font-bold text-primary mb-1">Dashboard Casa do Norte</h2>
-            <p className="text-gray-600">Bem-vindo ao sistema de gerenciamento de produtos típicos do Norte e Nordeste</p>
+            <h2 className="text-3xl font-bold text-primary mb-1">Dashboard</h2>
+            <p className="text-gray-600">Bem-vindo ao sistema de gerenciamento de produtos</p>
           </div>
         </div>
       </div>
