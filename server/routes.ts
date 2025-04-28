@@ -222,14 +222,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Formato direto enviado pelo frontend
       if (req.body.items && Array.isArray(req.body.items)) {
+        // Garantir que a data seja um objeto Date válido
+        let saleDate: Date;
+        try {
+          // Se for uma string ISO, converte para Date
+          if (typeof req.body.date === 'string') {
+            saleDate = new Date(req.body.date);
+          } else {
+            // Caso contrário, usa a data atual
+            saleDate = new Date();
+          }
+        } catch (e) {
+          saleDate = new Date();
+        }
+        
         const sale = {
           clientId: req.body.clientId === undefined ? null : req.body.clientId,
-          date: req.body.date || new Date().toISOString(),
+          date: saleDate,
           total: req.body.total || "0"
         };
         
         // Log para debug
-        console.log('Preparando para criar venda:', { sale, itemsCount: req.body.items.length });
+        console.log('Preparando para criar venda:', { 
+          sale: {
+            ...sale,
+            date: sale.date.toISOString() // Só para mostrar no log
+          }, 
+          itemsCount: req.body.items.length 
+        });
         
         if (req.body.items.length === 0) {
           return res.status(400).json({ message: "Sale must have at least one item" });
@@ -248,17 +268,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (req.body.sale && req.body.items) {
         const { sale, items } = req.body;
         
+        // Garantir que a data seja um objeto Date válido
+        let saleDate: Date;
+        try {
+          // Se for uma string ISO, converte para Date
+          if (typeof sale.date === 'string') {
+            saleDate = new Date(sale.date);
+          } else {
+            // Caso contrário, usa a data atual
+            saleDate = new Date();
+          }
+        } catch (e) {
+          saleDate = new Date();
+        }
+        
         // Adicionar valores padrão para evitar erros de validação
         const saleWithDefaults = {
           clientId: sale.clientId === undefined ? null : sale.clientId,
-          date: sale.date || new Date().toISOString(),
-          total: sale.total || "0",
-          ...sale
+          date: saleDate,
+          total: sale.total || "0"
         };
         
         // Log para debug
         console.log('Usando formato alternativo, dados preparados:', { 
-          sale: saleWithDefaults, 
+          sale: {
+            ...saleWithDefaults,
+            date: saleWithDefaults.date.toISOString() // Só para mostrar no log
+          }, 
           itemsCount: items?.length || 0 
         });
         

@@ -61,7 +61,7 @@ export const productValidationSchema = insertProductSchema.extend({
 // Sales schema
 export const sales = pgTable("sales", {
   id: serial("id").primaryKey(),
-  date: timestamp("date").defaultNow().notNull(),
+  date: timestamp("date", { mode: 'date' }).defaultNow().notNull(),
   clientId: integer("client_id").references(() => clients.id),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
