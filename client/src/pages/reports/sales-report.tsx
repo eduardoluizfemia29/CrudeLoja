@@ -116,12 +116,12 @@ export default function SalesReportPage() {
   
   // Buscar itens de vendas para calcular produtos mais vendidos
   const { data: saleItems, isLoading: isLoadingSaleDetails } = useQuery({
-    queryKey: ['/api/sales/items', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
+    queryKey: ['/api/sale-items', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
     enabled: sales && sales.length > 0 && products && products.length > 0,
     queryFn: async () => {
       try {
         // Usar o novo endpoint dedicado
-        const response = await fetch(`/api/sales/items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+        const response = await fetch(`/api/sale-items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
         
         if (!response.ok) {
           throw new Error('Falha ao buscar itens de venda');

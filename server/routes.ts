@@ -1,8 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertProductSchema, insertSaleSchema } from "@shared/schema";
+import { insertClientSchema, insertProductSchema, insertSaleSchema, products, saleItems, sales } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
+import { db } from "./db";
+import { and, eq, gte, lte, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes prefix
@@ -346,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para buscar todos os itens de venda em um período
-  app.get(`${apiPrefix}/sales/items`, async (req: Request, res: Response) => {
+  app.get(`${apiPrefix}/sale-items`, async (req: Request, res: Response) => {
     try {
       let startDate = new Date();
       let endDate = new Date();
@@ -362,23 +364,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate = new Date(req.query.endDate as string);
       }
       
-      // Buscar todas as vendas no período
-      const salesInPeriod = await storage.getSalesByDateRange(startDate, endDate);
+      // Buscar todos os itens de venda diretamente
+      const items = await db.select({
+        id: saleItems.id,
+        saleId: saleItems.saleId,
+        productId: saleItems.productId,
+        quantity: saleItems.quantity,
+        unitPrice: saleItems.unitPrice,
+        total: saleItems.total,
+        productName: products.name,
+        productPrice: products.price
+      })
+      .from(saleItems)
+      .innerJoin(products, eq(saleItems.productId, products.id))
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .where(and(
+        gte(sales.date, startDate),
+        lte(sales.date, endDate)
+      ))
+      .execute();
       
-      // Para cada venda, obter os itens
-      const allItems = [];
-      for (const sale of salesInPeriod) {
-        const saleDetails = await storage.getSaleWithItems(sale.id);
-        if (saleDetails && saleDetails.items) {
-          // Adicionar os itens à lista, com informações da venda associada
-          allItems.push(...saleDetails.items);
-        }
-      }
-      
-      res.json(allItems);
+      res.json(items);
     } catch (error: any) {
       console.error("Error fetching sale items:", error);
       res.status(500).json({ message: "Failed to fetch sale items: " + (error?.message || 'Unknown error') });
+    }
+  });
+  
+  // Manter a rota anterior para compatibilidade, mas redirecionando
+  app.get(`${apiPrefix}/sales/items`, async (req: Request, res: Response) => {
+    try {
+      // Redirecionar para a nova rota
+      const startDate = req.query.startDate ? req.query.startDate as string : undefined;
+      const endDate = req.query.endDate ? req.query.endDate as string : undefined;
+      
+      // Construir query params
+      const queryParams = new URLSearchParams();
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+      
+      // Redirecionar
+      return res.redirect(`${apiPrefix}/sale-items${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    } catch (error: any) {
+      console.error("Error redirecting:", error);
+      res.status(500).json({ message: "Failed to redirect: " + (error?.message || 'Unknown error') });
     }
   });
 
