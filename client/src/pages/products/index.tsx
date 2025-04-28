@@ -22,7 +22,8 @@ export default function ProductsPage() {
   const { data: products, isLoading, refreshData } = useSearch<Product>({
     queryKey: '/api/products',
     searchQuery,
-    debounceMs: 300
+    debounceMs: 300,
+    initialData: [] // Iniciar com array vazio para forçar busca
   });
 
   const handleAddProduct = () => {

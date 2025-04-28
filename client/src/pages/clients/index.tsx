@@ -21,7 +21,8 @@ export default function ClientsPage() {
   const { data: clients, isLoading, refreshData } = useSearch<Client>({
     queryKey: '/api/clients',
     searchQuery,
-    debounceMs: 300
+    debounceMs: 300,
+    initialData: [] // Iniciar com array vazio para forçar busca
   });
 
   const handleAddClient = () => {

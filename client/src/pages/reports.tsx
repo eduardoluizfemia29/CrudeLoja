@@ -13,10 +13,16 @@ export default function ReportsPage() {
   
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ['/api/products'],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const getStockBadge = (stock: number, row: Product) => {

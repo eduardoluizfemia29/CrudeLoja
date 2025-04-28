@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Product, productValidationSchema, DEFAULT_MIN_STOCK } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
