@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearch } from "@/hooks/use-search";
-import { Product } from "@shared/schema";
+import { Product, CATEGORY_LOW_STOCK_THRESHOLDS } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -57,17 +57,20 @@ export default function ProductsPage() {
     });
   };
 
-  const getStockBadge = (stock: number) => {
+  const getStockBadge = (stock: number, category: string) => {
+    // Obter o limite de estoque baixo com base na categoria
+    const lowStockThreshold = CATEGORY_LOW_STOCK_THRESHOLDS[category.toLowerCase()] || 5;
+    
     if (stock === 0) {
       return <Badge variant="danger">Sem estoque</Badge>;
-    } else if (stock <= 5) {
+    } else if (stock <= lowStockThreshold) {
       return <Badge variant="warning">Estoque baixo: {stock}</Badge>;
     } else {
       return <Badge variant="success">Em estoque: {stock}</Badge>;
     }
   };
 
-  const columns = [
+  const columns: Column<Product>[] = [
     {
       header: "Produto",
       accessor: (row: Product) => (
@@ -88,7 +91,7 @@ export default function ProductsPage() {
     },
     {
       header: "Categoria",
-      accessor: "category"
+      accessor: (row: Product) => row.category
     },
     {
       header: "Preço",
@@ -100,7 +103,7 @@ export default function ProductsPage() {
     {
       header: "Estoque",
       accessor: "stock",
-      cell: (value: number) => getStockBadge(value),
+      cell: (value: number, row: Product) => getStockBadge(value, row.category),
     },
     {
       header: "Última Atualização",

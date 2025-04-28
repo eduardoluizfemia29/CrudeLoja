@@ -2,6 +2,20 @@ import { pgTable, text, serial, integer, numeric, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Definição de estoque baixo por categoria
+export const CATEGORY_LOW_STOCK_THRESHOLDS: Record<string, number> = {
+  "eletronicos": 3,
+  "moveis": 2,
+  "vestuario": 5,
+  "calcados": 3,
+  "decoracao": 3,
+  "utilidades": 5,
+  "esportes": 3,
+  "brinquedos": 4,
+  "alimentos": 10,
+  "outro": 5
+};
+
 // Clients schema
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
