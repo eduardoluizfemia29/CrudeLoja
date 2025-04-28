@@ -85,39 +85,55 @@ export default function SalesReportPage() {
 
   const { startDate, endDate } = getDateRange();
   
-  // Buscar produtos (usado para referência em relatórios)
+  // Buscar produtos (usado para referência em relatórios) com cache
   const { data: products } = useQuery<Product[]>({
     queryKey: ['/api/products'],
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos para produtos (mudam pouco)
   });
+  
+  // Chaves de cache para evitar excesso de requisições
+  const salesSummaryCacheKey = `/api/sales/summary/daily?timeFrame=${timeFrame}`;
+  const salesCacheKey = `/api/sales?timeFrame=${timeFrame}`;
   
   // Buscar resumo de vendas diárias
   const { data: salesSummary, isLoading: isLoadingSales } = useQuery<DailySalesSummary[]>({
-    queryKey: ['/api/sales/summary/daily', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
+    queryKey: [salesSummaryCacheKey],
+    staleTime: 60 * 1000, // Cache por 1 minuto
     queryFn: async () => {
+      console.log("Buscando resumo de vendas:", `/api/sales/summary/daily?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       const response = await fetch(`/api/sales/summary/daily?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       if (!response.ok) {
         throw new Error('Falha ao buscar resumo de vendas');
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Dados de resumo recebidos:", data);
+      return data;
     }
   });
 
   // Buscar todas as vendas para o período
   const { data: sales, isLoading: isLoadingSaleItems } = useQuery({
-    queryKey: ['/api/sales', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
+    queryKey: [salesCacheKey],
+    staleTime: 60 * 1000, // Cache por 1 minuto
     queryFn: async () => {
+      console.log("Buscando vendas:", `/api/sales?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       const response = await fetch(`/api/sales?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       if (!response.ok) {
         throw new Error('Falha ao buscar vendas');
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Vendas recebidas:", data.length);
+      return data;
     }
   });
   
+  // Usar uma chave de cache para evitar excesso de requisições
+  const saleItemsCacheKey = `/api/sale-items?timeFrame=${timeFrame}`;
+  
   // Buscar itens de vendas para calcular produtos mais vendidos
   const { data: saleItems, isLoading: isLoadingSaleDetails } = useQuery({
-    queryKey: ['/api/sale-items', { startDate: startDate.toISOString(), endDate: endDate.toISOString() }],
-    // Removi a condição enabled para que os dados sejam carregados independentemente
+    queryKey: [saleItemsCacheKey],
+    staleTime: 60 * 1000, // Cache por 1 minuto
     queryFn: async () => {
       try {
         console.log("Fazendo requisição para:", `/api/sale-items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
@@ -260,18 +276,18 @@ export default function SalesReportPage() {
     },
   };
   
-  // Calcular métricas resumidas
+  // Calcular métricas resumidas 
   const totalSales = hasData
     ? salesSummary.reduce((sum, item) => {
-        const itemTotal = typeof item.total === 'string' ? parseFloat(item.total) : item.total;
-        return sum + itemTotal;
+        const itemTotal = typeof item.total === 'string' ? parseFloat(item.total) : Number(item.total);
+        return sum + (isNaN(itemTotal) ? 0 : itemTotal);
       }, 0)
     : 0;
     
   const totalTransactions = hasData
     ? salesSummary.reduce((sum, item) => {
-        const itemCount = typeof item.count === 'string' ? parseInt(item.count) : item.count;
-        return sum + itemCount;
+        const itemCount = typeof item.count === 'string' ? parseInt(item.count) : Number(item.count);
+        return sum + (isNaN(itemCount) ? 0 : itemCount);
       }, 0)
     : 0;
     
