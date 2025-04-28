@@ -153,14 +153,9 @@ export default function Dashboard() {
                     const minStock = product.minStock || DEFAULT_MIN_STOCK;
                     return (
                       <li key={product.id} className="p-2 hover:bg-accent/10 rounded-rustic flex justify-between items-center transition-colors">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                            <Droplets className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-gray-500">{product.category}</div>
-                          </div>
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-gray-500">{product.category}</div>
                         </div>
                         <div className={`text-sm font-medium px-2 py-1 rounded-full ${product.stock === 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {product.stock === 0 ? 'Sem estoque' : `${product.stock}/${minStock}`}
