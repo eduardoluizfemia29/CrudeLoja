@@ -263,11 +263,17 @@ export default function SalesPage() {
     }
     
     const saleData = {
-      date: new Date(),
-      items: cart,
-      total: calculateTotal()
+      date: new Date().toISOString(),
+      total: calculateTotal().toString(),
+      items: cart.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        unitPrice: item.product.price,
+        total: (Number(item.product.price) * item.quantity).toString()
+      }))
     };
     
+    console.log('Enviando dados de venda:', saleData);
     processSale.mutate(saleData);
   };
 

@@ -218,47 +218,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/sales`, async (req: Request, res: Response) => {
     try {
+      console.log('Received sale data:', JSON.stringify(req.body, null, 2));
+      
       // Formato direto enviado pelo frontend
-      if (req.body.items && req.body.date && req.body.total) {
+      if (req.body.items && Array.isArray(req.body.items)) {
         const sale = {
-          clientId: req.body.clientId || null,
-          date: req.body.date,
-          total: req.body.total
+          clientId: req.body.clientId === undefined ? null : req.body.clientId,
+          date: req.body.date || new Date().toISOString(),
+          total: req.body.total || "0"
         };
         
-        const items = req.body.items;
+        // Log para debug
+        console.log('Preparando para criar venda:', { sale, itemsCount: req.body.items.length });
         
-        if (!Array.isArray(items) || items.length === 0) {
+        if (req.body.items.length === 0) {
           return res.status(400).json({ message: "Sale must have at least one item" });
         }
         
-        const newSale = await storage.createSale(sale, items);
-        return res.status(201).json(newSale);
+        try {
+          const newSale = await storage.createSale(sale, req.body.items);
+          console.log('Venda criada com sucesso:', newSale);
+          return res.status(201).json(newSale);
+        } catch (storageError) {
+          console.error('Erro no storage ao criar venda:', storageError);
+          return res.status(500).json({ message: "Error in storage layer: " + storageError.message });
+        }
       } 
       // Formato alternativo
       else if (req.body.sale && req.body.items) {
         const { sale, items } = req.body;
         
-        const validatedSale = insertSaleSchema.safeParse(sale);
+        // Adicionar valores padrão para evitar erros de validação
+        const saleWithDefaults = {
+          clientId: sale.clientId === undefined ? null : sale.clientId,
+          date: sale.date || new Date().toISOString(),
+          total: sale.total || "0",
+          ...sale
+        };
         
-        if (!validatedSale.success) {
-          const errorMessage = fromZodError(validatedSale.error);
-          return res.status(400).json({ message: errorMessage.message });
-        }
+        // Log para debug
+        console.log('Usando formato alternativo, dados preparados:', { 
+          sale: saleWithDefaults, 
+          itemsCount: items?.length || 0 
+        });
         
-        // Validate each item
         if (!Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ message: "Sale must have at least one item" });
         }
         
-        const newSale = await storage.createSale(validatedSale.data, items);
-        return res.status(201).json(newSale);
+        try {
+          const newSale = await storage.createSale(saleWithDefaults, items);
+          console.log('Venda criada com sucesso:', newSale);
+          return res.status(201).json(newSale);
+        } catch (storageError) {
+          console.error('Erro no storage ao criar venda:', storageError);
+          return res.status(500).json({ message: "Error in storage layer: " + storageError.message });
+        }
       } else {
+        console.error('Formato de dados inválido:', req.body);
         return res.status(400).json({ message: "Invalid sale data format" });
       }
     } catch (error) {
       console.error("Error creating sale:", error);
-      res.status(500).json({ message: "Failed to create sale" });
+      res.status(500).json({ message: "Failed to create sale: " + (error.message || 'Unknown error') });
     }
   });
 
