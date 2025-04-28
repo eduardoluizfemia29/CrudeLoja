@@ -1,0 +1,50 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+type UseSearchProps<T> = {
+  queryKey: string;
+  searchQuery: string;
+  initialData?: T[];
+  debounceMs?: number;
+};
+
+export function useSearch<T>({
+  queryKey,
+  searchQuery,
+  initialData = [],
+  debounceMs = 300
+}: UseSearchProps<T>) {
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  
+  // Update debounced value after delay
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, debounceMs);
+    
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery, debounceMs]);
+  
+  // Fetch data with the debounced search term
+  const searchParam = debouncedSearchQuery ? `?search=${encodeURIComponent(debouncedSearchQuery)}` : '';
+  const queryKeyWithSearch = `${queryKey}${searchParam}`;
+  
+  const { data, isLoading, error, refetch } = useQuery<T[]>({
+    queryKey: [queryKeyWithSearch],
+    enabled: true,
+    initialData: initialData,
+  });
+  
+  const refreshData = useCallback(() => {
+    refetch();
+  }, [refetch]);
+  
+  return {
+    data: data || [],
+    isLoading,
+    error,
+    refreshData
+  };
+}
