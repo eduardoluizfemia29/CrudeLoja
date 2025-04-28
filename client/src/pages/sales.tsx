@@ -261,34 +261,30 @@ export default function SalesPage() {
                       value={searchQuery}
                       onValueChange={setSearchQuery}
                     />
-                    {filteredProducts.length > 0 ? (
-                      <CommandList>
-                        <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          {filteredProducts.map(product => (
-                            <CommandItem
-                              key={product.id}
-                              value={product.id.toString()}
-                              onSelect={() => setSelectedProductId(product.id.toString())}
-                              className={`flex justify-between items-center cursor-pointer p-2 ${
-                                selectedProductId === product.id.toString() ? 'bg-primary/10' : ''
-                              }`}
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-medium">{product.name}</span>
-                                <span className="text-sm text-gray-500">{product.category}</span>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-medium">{formatCurrency(Number(product.price))}</div>
-                                <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
-                                  {product.stock} em estoque
-                                </Badge>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    ) : null}
+                    <CommandList>
+                      <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                      <CommandGroup heading="Produtos disponíveis">
+                        {filteredProducts.map(product => (
+                          <CommandItem
+                            key={product.id}
+                            value={product.id.toString()}
+                            onSelect={() => setSelectedProductId(product.id.toString())}
+                            className="flex justify-between items-center cursor-pointer p-2"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{product.name}</span>
+                              <span className="text-sm text-gray-500">{product.category}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">{formatCurrency(Number(product.price))}</div>
+                              <Badge variant={product.stock <= (product.minStock || 5) ? "warning" : "success"} className="text-xs">
+                                {product.stock} em estoque
+                              </Badge>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </div>
               </div>
