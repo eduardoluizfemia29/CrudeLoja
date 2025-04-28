@@ -120,21 +120,14 @@ export default function SalesReportPage() {
     enabled: sales && sales.length > 0 && products && products.length > 0,
     queryFn: async () => {
       try {
-        // Em uma implementação real, seria melhor ter um endpoint específico para buscar todos os itens
-        // Como solução alternativa, vamos buscar os detalhes de cada venda
-        const allItems = [];
+        // Usar o novo endpoint dedicado
+        const response = await fetch(`/api/sales/items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
         
-        for (const sale of sales) {
-          const response = await fetch(`/api/sales/${sale.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.items && Array.isArray(data.items)) {
-              allItems.push(...data.items);
-            }
-          }
+        if (!response.ok) {
+          throw new Error('Falha ao buscar itens de venda');
         }
         
-        return allItems;
+        return response.json();
       } catch (error) {
         console.error('Erro ao buscar itens de venda:', error);
         return [];

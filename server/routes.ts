@@ -345,6 +345,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para buscar todos os itens de venda em um período
+  app.get(`${apiPrefix}/sales/items`, async (req: Request, res: Response) => {
+    try {
+      let startDate = new Date();
+      let endDate = new Date();
+      
+      if (req.query.startDate) {
+        startDate = new Date(req.query.startDate as string);
+      } else {
+        // Default to 30 days ago
+        startDate.setDate(startDate.getDate() - 30);
+      }
+      
+      if (req.query.endDate) {
+        endDate = new Date(req.query.endDate as string);
+      }
+      
+      // Buscar todas as vendas no período
+      const salesInPeriod = await storage.getSalesByDateRange(startDate, endDate);
+      
+      // Para cada venda, obter os itens
+      const allItems = [];
+      for (const sale of salesInPeriod) {
+        const saleDetails = await storage.getSaleWithItems(sale.id);
+        if (saleDetails && saleDetails.items) {
+          // Adicionar os itens à lista, com informações da venda associada
+          allItems.push(...saleDetails.items);
+        }
+      }
+      
+      res.json(allItems);
+    } catch (error: any) {
+      console.error("Error fetching sale items:", error);
+      res.status(500).json({ message: "Failed to fetch sale items: " + (error?.message || 'Unknown error') });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
