@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertProductSchema } from "@shared/schema";
+import { insertClientSchema, insertProductSchema, insertSaleSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -175,6 +175,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting product:", error);
       res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
+  // Sales routes
+  app.get(`${apiPrefix}/sales`, async (req: Request, res: Response) => {
+    try {
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      
+      if (req.query.startDate) {
+        startDate = new Date(req.query.startDate as string);
+      }
+      
+      if (req.query.endDate) {
+        endDate = new Date(req.query.endDate as string);
+      }
+      
+      const sales = await storage.getSales(startDate, endDate);
+      res.json(sales);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      res.status(500).json({ message: "Failed to fetch sales" });
+    }
+  });
+
+  app.get(`${apiPrefix}/sales/:id`, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const sale = await storage.getSaleWithItems(id);
+      
+      if (!sale) {
+        return res.status(404).json({ message: "Sale not found" });
+      }
+      
+      res.json(sale);
+    } catch (error) {
+      console.error("Error fetching sale:", error);
+      res.status(500).json({ message: "Failed to fetch sale" });
+    }
+  });
+
+  app.post(`${apiPrefix}/sales`, async (req: Request, res: Response) => {
+    try {
+      const { sale, items } = req.body;
+      
+      const validatedSale = insertSaleSchema.safeParse(sale);
+      
+      if (!validatedSale.success) {
+        const errorMessage = fromZodError(validatedSale.error);
+        return res.status(400).json({ message: errorMessage.message });
+      }
+      
+      // Validate each item
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "Sale must have at least one item" });
+      }
+      
+      const newSale = await storage.createSale(validatedSale.data, items);
+      res.status(201).json(newSale);
+    } catch (error) {
+      console.error("Error creating sale:", error);
+      res.status(500).json({ message: "Failed to create sale" });
+    }
+  });
+
+  app.get(`${apiPrefix}/sales/summary/daily`, async (req: Request, res: Response) => {
+    try {
+      let startDate = new Date();
+      let endDate = new Date();
+      
+      if (req.query.startDate) {
+        startDate = new Date(req.query.startDate as string);
+      } else {
+        // Default to 30 days ago
+        startDate.setDate(startDate.getDate() - 30);
+      }
+      
+      if (req.query.endDate) {
+        endDate = new Date(req.query.endDate as string);
+      }
+      
+      // Get daily summary
+      const summary = await storage.getSalesSummaryByDay(startDate, endDate);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching sales summary:", error);
+      res.status(500).json({ message: "Failed to fetch sales summary" });
     }
   });
 

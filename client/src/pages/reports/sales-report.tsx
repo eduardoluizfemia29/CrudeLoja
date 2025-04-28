@@ -1,16 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { Product } from "@shared/schema";
+import { Product, Sale, SaleItem } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils/format";
 import { FileDown, Printer, Calendar } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
-import { addDays, format, startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from "date-fns";
+import { addDays, format, startOfDay, subDays, isToday, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   Chart as ChartJS, 
@@ -39,65 +39,54 @@ ChartJS.register(
   LineElement
 );
 
-// Gerar dados de exemplo para vendas (apenas para demonstração)
-const generateSampleSalesData = () => {
-  // Gera um número aleatório entre min e max
-  const randomBetween = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
-  
-  const now = new Date();
-  const thirtyDaysAgo = subDays(now, 30);
-  
-  const dailySales = [];
-  for (let i = 0; i < 30; i++) {
-    const date = addDays(thirtyDaysAgo, i);
-    dailySales.push({
-      date,
-      total: randomBetween(300, 2500),
-      itemsSold: randomBetween(5, 25),
-      transactions: randomBetween(1, 8)
-    });
-  }
-  
-  // Popular produtos mais vendidos
-  const topProducts = [
-    { id: 1, name: "Água", quantity: randomBetween(30, 100), total: randomBetween(150, 500) },
-    { id: 2, name: "Pinga", quantity: randomBetween(20, 60), total: randomBetween(600, 1800) },
-    { id: 3, name: "Fone de ouvido", quantity: randomBetween(5, 15), total: randomBetween(250, 750) },
-    { id: 4, name: "Carro", quantity: randomBetween(1, 3), total: randomBetween(1000, 3000) },
-  ];
-  
-  return { dailySales, topProducts };
+// Type para os dados de resumo diário de vendas
+type DailySalesSummary = {
+  date: string;
+  total: number;
+  count: number;
 };
 
-// Função para agrupar vendas por período
-const groupSalesByPeriod = (sales: any[], groupBy: 'day' | 'week' | 'month') => {
-  const groupedSales: Record<string, { total: number, itemsSold: number, transactions: number }> = {};
+// Type para produtos mais vendidos
+type TopProductSummary = {
+  id: number;
+  name: string;
+  quantity: number;
+  total: number;
+};
+
+// Função para calcular produtos mais vendidos de uma lista de items de venda
+const calculateTopProducts = (saleItems: SaleItem[] = [], products: Product[] = [], limit = 5): TopProductSummary[] => {
+  if (!saleItems.length || !products.length) return [];
   
-  sales.forEach(sale => {
-    let key = '';
-    
-    if (groupBy === 'day') {
-      key = format(sale.date, 'yyyy-MM-dd');
-    } else if (groupBy === 'week') {
-      const weekStart = startOfWeek(sale.date, { locale: ptBR });
-      key = format(weekStart, 'yyyy-MM-dd');
-    } else if (groupBy === 'month') {
-      key = format(sale.date, 'yyyy-MM');
+  // Agrupar por produto e somar quantidades e valores
+  const productMap: Record<number, { quantity: number, total: number }> = {};
+  
+  saleItems.forEach(item => {
+    if (!productMap[item.productId]) {
+      productMap[item.productId] = { quantity: 0, total: 0 };
     }
     
-    if (!groupedSales[key]) {
-      groupedSales[key] = { total: 0, itemsSold: 0, transactions: 0 };
-    }
+    const unitPrice = typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice;
     
-    groupedSales[key].total += sale.total;
-    groupedSales[key].itemsSold += sale.itemsSold;
-    groupedSales[key].transactions += sale.transactions;
+    productMap[item.productId].quantity += item.quantity;
+    productMap[item.productId].total += item.quantity * unitPrice;
   });
   
-  return Object.entries(groupedSales).map(([date, data]) => ({
-    date,
-    ...data
-  })).sort((a, b) => a.date.localeCompare(b.date));
+  // Converter para array e ordenar por quantidade
+  const topProducts = Object.entries(productMap)
+    .map(([productId, data]) => {
+      const product = products.find(p => p.id === parseInt(productId));
+      return {
+        id: parseInt(productId),
+        name: product?.name || 'Produto não encontrado',
+        quantity: data.quantity,
+        total: data.total
+      };
+    })
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, limit);
+  
+  return topProducts;
 };
 
 export default function SalesReportPage() {
