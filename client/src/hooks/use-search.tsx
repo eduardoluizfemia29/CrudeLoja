@@ -27,16 +27,18 @@ export function useSearch<T>({
     };
   }, [searchQuery, debounceMs]);
   
-  // Fetch data with the debounced search term
-  const searchParam = debouncedSearchQuery ? `?search=${encodeURIComponent(debouncedSearchQuery)}` : '';
-  const fullUrl = `${queryKey}${searchParam}`;
+  // Preparar URL com parâmetro de busca se necessário
+  const url = debouncedSearchQuery 
+    ? `${queryKey}?search=${encodeURIComponent(debouncedSearchQuery)}` 
+    : queryKey;
   
   const { data, isLoading, error, refetch } = useQuery<T[]>({
     queryKey: [queryKey, debouncedSearchQuery], // Use queryKey and searchQuery separately for stable caching
     queryFn: async () => {
-      const response = await fetch(fullUrl);
+      console.log("Fazendo requisição para:", url);
+      const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error(`Network response was not ok: ${response.status}`);
       }
       return response.json();
     },
