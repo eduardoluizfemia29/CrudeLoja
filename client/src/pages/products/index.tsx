@@ -96,20 +96,20 @@ export default function ProductsPage() {
     },
     {
       header: "Preço",
-      accessor: "price",
-      cell: (value: number) => (
+      accessor: (row: Product) => row.price,
+      cell: (value: string, row: Product) => (
         <span className="font-medium text-gray-900">{formatCurrency(Number(value))}</span>
       ),
     },
     {
       header: "Estoque",
-      accessor: "stock",
+      accessor: (row: Product) => row.stock,
       cell: (value: number, row: Product) => getStockBadge(value, row),
     },
     {
       header: "Última Atualização",
-      accessor: "updatedAt",
-      cell: (value: string) => formatDate(value),
+      accessor: (row: Product) => row.updatedAt,
+      cell: (value: Date | null, row: Product) => formatDate(value),
     },
   ];
 

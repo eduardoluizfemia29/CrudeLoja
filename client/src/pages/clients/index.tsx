@@ -60,7 +60,7 @@ export default function ClientsPage() {
   const columns = [
     {
       header: "Nome",
-      accessor: "name",
+      accessor: (row: Client) => row.name,
       cell: (value: string) => (
         <span className="font-medium text-gray-900">{value}</span>
       ),
@@ -85,8 +85,8 @@ export default function ClientsPage() {
     },
     {
       header: "Último Pedido",
-      accessor: "lastOrderDate",
-      cell: (value: string) => formatDate(value),
+      accessor: (row: Client) => row.lastOrderDate,
+      cell: (value: Date | null) => formatDate(value),
     },
   ];
 
