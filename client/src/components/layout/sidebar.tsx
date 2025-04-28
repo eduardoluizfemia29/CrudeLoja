@@ -31,7 +31,7 @@ export function Sidebar() {
       <div className="p-4 border-b border-gray-200 bg-primary/10">
         <div className="flex items-center">
           <UtensilsCrossed className="h-6 w-6 text-primary mr-2" />
-          <h1 className="text-xl font-bold text-primary font-barriecito">Casa do Norte</h1>
+          <h1 className="text-xl font-bold text-primary font-barriecito">duarDo</h1>
         </div>
         <p className="text-xs text-gray-600 mt-1">Sistema de Gerenciamento</p>
       </div>

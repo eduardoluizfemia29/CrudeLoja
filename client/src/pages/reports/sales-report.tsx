@@ -323,7 +323,7 @@ export default function SalesReportPage() {
         
         // Adicionar título
         pdf.setFontSize(20);
-        pdf.text('Relatório de Vendas - Casa do Norte', 105, 15, { align: 'center' });
+        pdf.text('Relatório de Vendas - duarDo', 105, 15, { align: 'center' });
         
         // Adicionar informações do relatório
         pdf.setFontSize(12);

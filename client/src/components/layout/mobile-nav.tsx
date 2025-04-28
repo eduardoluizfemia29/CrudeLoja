@@ -24,7 +24,7 @@ export function MobileNav({ isOpen, setIsOpen }: MobileNavProps) {
         <div className="flex items-center">
           <UtensilsCrossed className="h-6 w-6 text-primary mr-2" />
           <div>
-            <h1 className="text-xl font-bold text-primary">Casa do Norte</h1>
+            <h1 className="text-xl font-bold text-primary">duarDo</h1>
             <p className="text-xs text-gray-600">Sistema de Gerenciamento</p>
           </div>
         </div>
